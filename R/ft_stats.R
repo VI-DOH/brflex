@@ -1,0 +1,551 @@
+
+#' BRFSS Stats to Flextable
+#'
+#' Takes the results of a call to survey_stats() and turns it into a flextable object.
+#'   This function gets some information from the attributes of the stats table (df_stats)
+#'
+#' @param df_stats a brfss_stats classed data frame
+#' @param ... other args
+#' @param coi character column of interest
+#' @param population character
+#' @param stats character
+#' @param exclude character
+#' @param rename named character
+#' @param widths integer
+#' @param align character
+#' @param subset_placement character
+#' @param subset_sep fp_border object
+#' @param subvar_sep fp_border object
+#' @param denom_sep fp_border object
+#' @param data_sep fp_border object
+#' @param response_sep fp_border object
+#' @param stats_sep fp_border object
+#' @param col_padding integer
+#' @param default_font fp_font object
+#' @param table_font fp_font object
+#' @param line_spacing integer
+#' @param title_spacing integer
+#' @param response character
+#' @param header character
+#' @param header_font fp_font object
+#' @param data_font fp_font object
+#' @param titles character
+#' @param title_fonts fp_font object
+#' @param title_max_char integer
+#' @param highlights highlights object
+#' @param footers footers
+#' @param footer_fonts fp_font object
+#' @param footnotes footnotes object
+#' @param box box
+#' @param grid grid
+#'
+#' @return flextable object
+#' @export
+#'
+ft_stats <- function(df_stats, ...,
+                     coi = NULL,
+                     population = NULL,
+                     stats = c("den", "num", "percent", "ci"),
+                     exclude = "^$",
+                     responses = ".*",
+                     rename = c(percent = "pct"),
+                     widths = c(subset = 3, ci = 1),
+                     align = c(ci = "center"),
+                     subset_placement = "left",
+                     subset_sep = ft_border(),
+                     subvar_sep = ft_border(),
+                     denom_sep = ft_border(),
+                     data_sep = NULL,
+                     response_sep = ft_border(),
+                     stats_sep = ft_border(),
+                     col_padding = c(percent = 0.05, den = 0.1),
+                     line_spacing = 1.0,
+                     title_spacing = 1.0,
+
+                     header = NULL,
+                     titles = NULL,
+                     title_max_char = 9999,
+                     highlights = NULL,
+                     footers = NULL,
+                     footnotes = TRUE,
+
+                     borders = list(),
+
+                     bgs = list(
+                       table_bg = NULL,
+                       header_bg = NULL,
+                       titles_bg = NULL,
+                       response_bg = NULL,
+                       stats_bg = NULL,
+                       data_bg = NULL,
+                       footer_bg = NULL
+                     ),
+
+                     fonts = list(
+                       table_fonts = NULL,
+                       subset_fonts = NULL,
+                       header_fonts =  NULL,
+                       response_fonts =  NULL,
+                       titles_fonts = NULL,
+                       data_fonts =  NULL,
+                       footer_fonts = NULL
+                     ),
+
+                     paddings = list(),
+
+                     box = NULL,
+                     grid = NULL) {
+
+
+
+  #  ==== if the stats table is NULL or empty, return NULL
+
+
+  if(any(c("brfss_data", "brfss_prepped") %in% class(df_stats))) {
+    if(missing(..1)) {
+      return(NULL)
+    }
+    coi <- rlang::as_name(enquos(...)[[1]])
+    df_stats <- survey_stats(df_stats, coi = coi, digits = 1,
+                             pct = TRUE)
+
+  } else if(! "brfss_stats" %in% class(df_stats)){
+
+    message(paste0("=======================================\n",
+                   "Invalid BRFSS stats data\n",
+                   "========================================"))
+    return(NULL)
+  }
+
+
+  df_stats <- df_stats %>%
+    filter(!grepl(exclude, subset)) %>%
+    filter(grepl(responses, response))
+
+  if(nrow(df_stats) == 0) {
+
+    message(paste0("===================================================\n",
+                   "Invalid responses filter ... no matching responses\n",
+                   "==================================================="))
+    return(NULL)
+  }
+
+  #  ====  get the attributes from the stats df to use later  ============
+  #  =========    right now for use in title substitutions  =========
+
+  stats_attrs <- attributes(df_stats)
+
+  # =======  apply default fonts if necessary  ==============
+
+  flextable::set_flextable_defaults()
+
+
+  # ==========================================================================
+  #
+  #                we're good to go
+
+  coi <- attr(df_stats, "coi")
+
+  if(is.null(population) & "population" %in%  names(attributes(df_stats))) {
+    population <- attr(df_stats, "population")
+
+
+    df_stats <- df_stats %>%
+      mutate(subset = ifelse(subset == "All Respondents", population, subset))
+  }
+
+  #  character for separating stats and vals
+
+  sep_char <- "^"
+
+
+  # add ci text column (CI_Lower-CI_upper)
+
+  df_stats_rpt <- df_stats
+
+  if("ci" %in% stats && "CI_lower" %in% colnames(df_stats_rpt)) {
+    df_stats_rpt <- df_stats_rpt %>%
+      mutate(ci = paste0(CI_lower, "-", CI_upper))
+  }
+  # get the set of valid values
+
+  # vals <- values() %>% filter(col_name == coi) %>% pull(text)
+
+  vals <- df_stats_rpt %>% pull(response) %>% unique()
+  nvals <- length(vals)
+
+  stats_in <- df_stats_rpt %>% select( where(is.numeric), matches("^ci$")) %>% colnames()
+  stats_rm <- stats_in %>% {.[!. %in% stats]}
+
+  df_stats_rpt <- df_stats_rpt %>% select(-all_of(stats_rm))
+
+  stats <- stats %>% {.[!. %in% "den"]} %>% {.[.%in% stats_in]}
+
+  cnames <- df_stats_rpt %>% colnames()
+  nstats <- length(stats)
+
+  static_cols <- cnames %>% {.[!. %in% c(stats, "response")]}
+
+  nstatic <- length(static_cols)
+
+  has_subvar <- "subvar" %in% static_cols
+
+  fin_cols <- c(static_cols,
+                expand.grid(stats,vals) %>%
+                  mutate(col = paste0(Var1,sep_char,Var2)) %>%
+                  pull(col))
+
+  if(length(stats) == 1) fin_cols <- gsub(".*\\^","", fin_cols)
+
+  if(has_subvar) subvars <- df_stats %>%
+    pull(subvar) %>%
+    unique()
+  else subvars  <-  character(0)
+
+  df_tbl <- df_stats_rpt %>%
+    tidyr::pivot_wider(names_from = response,
+                       values_from = all_of(stats),
+                       names_sep = sep_char) %>%
+    as.data.frame() %>%
+    select(all_of(fin_cols))
+
+  if(has_subvar) {
+
+    df_tbl <- df_tbl %>%
+      group_by(subvar) %>%
+      mutate(rn = row_number()) %>%
+      ungroup() %>%
+      mutate(my_sub = which_subvar(subvar = subvar, subvars = subvars) ) %>%
+      arrange(my_sub, rn) %>%
+      select(-my_sub, -rn) %>%
+      mutate(across(where(is.numeric), ~if_else(is.na(.x), 0, .x))) %>%
+      mutate(across(where(is.character), ~if_else(is.na(.x), "-", .x)))
+  }
+  #subsets = subsets, subvar))
+
+
+  val_hdr <- df_tbl %>% colnames() %>% grep(sep_char,., fixed = T, value = T) %>%
+    gsub("(.*)\\^(.*)","\\2",.)
+
+  hdr_2_stats <- c(static_cols, rep(stats, nvals))
+
+  denom_col <- static_cols %>% {. == "den"} %>% which()
+
+  #  figure out merging for val header line
+  val_hdr <- c("",vals)
+  hdr_1_vals <- rep("", nstatic)
+
+
+  sapply(vals, function(val){
+    hdr_1_vals <<- c(hdr_1_vals, rep(val,nstats))
+  })
+
+
+  right_bords <- which(hdr_2_stats == stats[1]) - 1
+
+
+  # ====================================================================
+  # ==========   rename the headers if requested    ==============
+
+
+  rename <- as.list(rename)
+
+  if(is.null(header)) {
+
+    invisible(
+      mapply(function(stat_in, stat_out) {
+        hdr_2_stats[hdr_2_stats == stat_in] <<- stat_out
+      }, names(rename), rename)
+    )
+  } else {
+
+    hdr_2_stats <- header
+  }
+
+  # ====================================================================
+  #  === calculate tops of each new subset for a border    ==============
+
+  if(has_subvar) {
+    top_bords <- df_tbl %>% select(subvar) %>% distinct() %>%
+
+      left_join(df_tbl %>%
+                  count(subvar),by = join_by(subvar)) %>%
+      mutate(x=cumsum(n)+1) %>%
+      mutate(start = x-n) %>%
+      pull(start)
+
+    bottom_bords <- (top_bords - 1) %>%   {.[.>0]}
+
+  } else bottom_bords<-NULL
+
+  stat_cols <- (nstatic + 1) : ncol(df_tbl)
+
+  # if(has_subvar) df_tbl <- df_tbl %>%
+  #   mutate(subvar = ifelse(subvar == "", subset, subvar))
+
+  # ====================================================================
+  # ====================================================================
+  #  === create the table, remove the header ... we will create it, and
+  #  ============       set any table defaults    ===========
+
+  ft <- df_tbl %>% flextable()
+
+  sections <- list(nrow = list(responses = 0, stats = 0, titles = 0))
+
+  if(subset_placement == "top" ) {
+
+    has_subvar <- FALSE
+    hdr_1_vals <- tail(hdr_1_vals,-1)
+    hdr_2_stats <- tail(hdr_2_stats,-1)
+    right_bords <- right_bords - 1
+
+    ft <- ft %>%
+      delete_part(part = "body") %>%
+      ft_add_data(df_tbl,
+                  subset_border = subset_sep)
+  }
+
+  ## ====   set placement info for use later   ======
+
+  attr(ft,"sub_placement") <- subset_placement
+
+  ft <- ft %>%
+    flextable::delete_rows(i=1, part = "header")
+
+
+  # ==========================================================
+  # ==========   handle the header lines  =====================
+
+  # ========  do the titles   =====
+
+  if(!is.null(titles)) {
+
+    ntitles <- length(titles)
+    sections$nrow$titles <- ntitles
+
+    if(ntitles > 0) {
+
+      titles <- gsub_attr(titles, stats_attrs)%>%
+        split_before(title_max_char,collapse = "\n")
+
+      ft <- ft %>%
+        ft_add_titles(titles = titles, title_spacing = title_spacing)
+    }
+  }
+
+  # ========  do the stats header and the responses header   =====
+
+
+  if(!is.null(responses)) {
+
+    sections$nrow$responses <- 1
+
+    ft <- ft %>%
+      ft_add_resp_hdr(values = hdr_1_vals)
+  }
+
+  if(!is.null(stats)) {
+
+    sections$nrow$stats <- 1
+
+    ft <- ft %>%
+      ft_add_stats_hdr(values = hdr_2_stats)
+  }
+
+  if(has_subvar) ft <- ft %>%
+    flextable::merge_v(j = 1, part = "body")
+
+  ##############################################################
+  ##
+  ##      ===========   handle footnotes    ===============
+
+  if(footnotes) ft <- ft %>% add_footnotes(hdr_2_stats, population)
+
+  ft$header$sections <- sections
+
+  # =========  do the fonts  ================
+
+  ft <- ft %>% handle_fonts(fonts = fonts)
+
+  # =========  do the backgrounds  ================
+
+  ft <- ft %>% handle_bgs(bgs = bgs)
+
+  # =========  do the paddings  ================
+
+  ft <- ft %>% handle_paddings(paddings = paddings)
+
+  # =========  do the borders  ================
+
+  if(FALSE) ft <- ft %>% handle_borders(borders = borders)
+
+  # add borders between data rows and data cols
+
+  if(!is.null(data_sep)) ft <- ft %>%
+    flextable::hline( border = data_sep, part = "body")
+
+  if(!is.null(data_sep)) ft <- ft %>%
+    flextable::vline( border = data_sep, part = "body")
+
+
+  # add borders between subsets
+
+  if(has_subvar && !is.null(subset_sep)) ft <- ft %>%
+    flextable::hline(i = bottom_bords, border = subset_sep, part = "body")
+
+  # add borders before denom
+
+  if(!is.null(denom_sep)) {
+
+    ft <- ft %>%
+      flextable::vline(j =  denom_col - 1, border = denom_sep, part = "body")
+
+  }
+
+
+  ft <- ft %>%
+    flextable::vline(j = right_bords, border = stats_sep, part = "header") %>%
+    flextable::vline(j = right_bords, border = fp_border(), part = "body") %>%
+    flextable::hline_bottom( j = 1:length(hdr_2_stats), border = fp_border()) %>%
+
+
+    # ======= handle line spacing for body  ===========
+
+  flextable::line_spacing(j = 1:length(hdr_2_stats), space = line_spacing, part = "body")
+
+  #  ===========   handle columns widths    ===============
+
+
+  invisible(
+    mapply(function(col, width) {
+
+      cols <- which(hdr_2_stats == col)
+      if(length(cols) == 0) cols <- which(colnames(df_stats) == col)
+
+      if(length(cols) > 0) ft <<- ft %>%  flextable::width(j = cols, width = width)
+    }, names(widths), widths)
+  )
+
+  #  ===========   handle column alignment    ===============
+
+  invisible(
+    mapply(function(col, align) {
+      cols <- which(hdr_2_stats == col)
+
+      if(length(cols)>0) {
+        ft <<- ft %>%
+          flextable::align(j = cols, align = align)
+      }
+    }, names(align), align)
+  )
+
+  #  ===========   handle column padding    ===============
+
+  invisible(
+    mapply(function(col, padding) {
+      cols <- which(hdr_2_stats == col)
+
+      if(length(cols)>0) {
+        ft <<- ft %>%
+          flextable::padding(j = cols, padding.right=padding*72)
+      }
+    }, names(col_padding), col_padding)
+  )
+
+
+  # ============  merge the "All Respondents" (row 1, where there is no subvar)
+  # ========         with the first column if there is one
+
+  if(has_subvar) ft <- ft %>%
+    flextable::merge_h_range(i = 1, j1 = 1, j2 = 2) %>%
+    #flextable::align(i=1, j=1:2, "right") %>%
+    flextable::padding(i=1, j=1, padding.right = 18)
+
+  #  ======  if there are highlight_rows   ====================
+
+  if(!is.null(highlights)) ft <- ft %>% ft_add_highlights(highlights)
+
+
+  #  ======  do the grid around the data if requird
+
+  if(!is.null(grid)) ft <- ft %>% ft_grid_table(grid = grid)
+
+  #  ======  do the box around the table if requird
+
+  if(!is.null(box)) ft <- ft %>% ft_box_table(box = box)
+
+  #  ==== there are some border issues so this their fix  ========
+
+  ft <- ft %>%
+    flextable::fix_border_issues()
+
+  #  ====  caption   ===========
+
+  # ft <- ft %>%  set_caption(
+  #   "My table!", fp_p = fp_par(border = fp_border())
+  # )
+
+  #  ====  reset the defaults   ===========
+
+  flextable::init_flextable_defaults()
+
+  #  ====  return the finished table   ===========
+
+  ft
+}
+
+responses_rows <- function(ft) {
+
+  irow <- ft$header$sections$nrow$titles + 1
+  irow:(irow + ft$header$sections$nrow$responses - 1)
+
+}
+
+titles_rows <- function(ft) {
+
+  1:(ft$header$sections$nrow$titles)
+
+}
+
+stats_rows <- function(ft) {
+
+  irow <- ft$header$sections$nrow$titles + ft$header$sections$nrow$responses + 1
+  irow:(irow + ft$header$sections$nrow$stats - 1)
+
+}
+
+reused <- function(x,ny = 1) {
+
+  nx <- length(x)
+
+  ngr <- (ny %/% nx) + 1
+
+  ind <- rep(1:nx, ngr) %>% head(ny)
+
+  x[ind]
+
+}
+
+subvar_rows <- function(ft) {
+
+  subvars <- ft$body$dataset$subvar %>% unique() %>% {.[. != ""]}
+  which(ft$body$dataset$subset %in% subvars)
+
+}
+
+subset_rows <- function(ft) {
+
+  subvars <- ft$body$dataset$subvar %>% unique() %>% {.[. != ""]}
+  which(!ft$body$dataset$subset %in% subvars)
+
+}
+
+subset_row <- function(ft, subset) {
+
+  which(ft$body$dataset$subset == {{subset}})
+
+}
+
+# if null operator
+
+`%||%` <- function(x, y) if (is.null(x)) y else x
