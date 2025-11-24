@@ -52,13 +52,13 @@ ft_stats <- function(df_stats, ...,
                      widths = c(subset = 3, ci = 1),
                      align = c(ci = "center"),
                      subset_placement = "left",
-                     subset_sep = ft_border(),
-                     subvar_sep = ft_border(),
-                     denom_sep = ft_border(),
+                     subset_sep = NULL, #ft_border(),
+                     subvar_sep = NULL, #ft_border(),
+                     denom_sep = NULL, #ft_border(),
                      data_sep = NULL,
-                     response_sep = ft_border(),
-                     stats_sep = ft_border(),
-                     col_padding = c(percent = 0.05, den = 0.1),
+                     response_sep = NULL, #ft_border(),
+                     stats_sep = NULL, #ft_border(),
+                     col_padding = NULL, #c(percent = 0.05, den = 0.1),
                      line_spacing = 1.0,
                      title_spacing = 1.0,
 
@@ -71,25 +71,9 @@ ft_stats <- function(df_stats, ...,
 
                      borders = list(),
 
-                     bgs = list(
-                       table_bg = NULL,
-                       header_bg = NULL,
-                       titles_bg = NULL,
-                       response_bg = NULL,
-                       stats_bg = NULL,
-                       data_bg = NULL,
-                       footer_bg = NULL
-                     ),
+                     bgs = list(),
 
-                     fonts = list(
-                       table_fonts = NULL,
-                       subset_fonts = NULL,
-                       header_fonts =  NULL,
-                       response_fonts =  NULL,
-                       titles_fonts = NULL,
-                       data_fonts =  NULL,
-                       footer_fonts = NULL
-                     ),
+                     fonts = list(),
 
                      paddings = list(),
 
@@ -99,7 +83,6 @@ ft_stats <- function(df_stats, ...,
 
 
   #  ==== if the stats table is NULL or empty, return NULL
-
 
   if(any(c("brfss_data", "brfss_prepped") %in% class(df_stats))) {
     if(missing(..1)) {
@@ -146,9 +129,15 @@ ft_stats <- function(df_stats, ...,
 
   coi <- attr(df_stats, "coi")
 
-  if(is.null(population) & "population" %in%  names(attributes(df_stats))) {
+  if(is.null(population) ) {
+    if("population" %in%  names(attributes(df_stats))) {
+
     population <- attr(df_stats, "population")
 
+    df_stats <- df_stats %>%
+      mutate(subset = ifelse(subset == "All Respondents", population, subset))
+    }
+  } else {
 
     df_stats <- df_stats %>%
       mutate(subset = ifelse(subset == "All Respondents", population, subset))
@@ -377,41 +366,51 @@ ft_stats <- function(df_stats, ...,
 
   # =========  do the borders  ================
 
-  if(FALSE) ft <- ft %>% handle_borders(borders = borders)
+  ft <- ft %>% handle_borders(borders = borders)
 
-  # add borders between data rows and data cols
+  #################################################################
+  ##
+  ##      trying to make my borders functions
+  #            take the place of all of this
 
-  if(!is.null(data_sep)) ft <- ft %>%
-    flextable::hline( border = data_sep, part = "body")
+  do_other_borders <- FALSE
 
-  if(!is.null(data_sep)) ft <- ft %>%
-    flextable::vline( border = data_sep, part = "body")
+  if(do_other_borders) {
+    # add borders between data rows and data cols
+
+    if(!is.null(data_sep)) ft <- ft %>%
+        flextable::hline( border = data_sep, part = "body")
+
+    if(!is.null(data_sep)) ft <- ft %>%
+        flextable::vline( border = data_sep, part = "body")
 
 
-  # add borders between subsets
+    # add borders between subsets
 
-  if(has_subvar && !is.null(subset_sep)) ft <- ft %>%
-    flextable::hline(i = bottom_bords, border = subset_sep, part = "body")
+    if(has_subvar && !is.null(subset_sep)) ft <- ft %>%
+        flextable::hline(i = bottom_bords, border = subset_sep, part = "body")
 
-  # add borders before denom
+    # add borders before denom
 
-  if(!is.null(denom_sep)) {
+    if(!is.null(denom_sep)) {
+
+      ft <- ft %>%
+        flextable::vline(j =  denom_col - 1, border = denom_sep, part = "body")
+
+    }
+
 
     ft <- ft %>%
-      flextable::vline(j =  denom_col - 1, border = denom_sep, part = "body")
+      flextable::vline(j = right_bords, border = stats_sep, part = "header") %>%
+      flextable::vline(j = right_bords, border = fp_border(), part = "body") %>%
+      flextable::hline_bottom( j = 1:length(hdr_2_stats), border = fp_border())
 
   }
+##############################################################################################
 
+  # ======= handle line spacing for body  ===========
 
-  ft <- ft %>%
-    flextable::vline(j = right_bords, border = stats_sep, part = "header") %>%
-    flextable::vline(j = right_bords, border = fp_border(), part = "body") %>%
-    flextable::hline_bottom( j = 1:length(hdr_2_stats), border = fp_border()) %>%
-
-
-    # ======= handle line spacing for body  ===========
-
-  flextable::line_spacing(j = 1:length(hdr_2_stats), space = line_spacing, part = "body")
+  ft <- ft %>%flextable::line_spacing(j = 1:length(hdr_2_stats), space = line_spacing, part = "body")
 
   #  ===========   handle columns widths    ===============
 
@@ -430,6 +429,7 @@ ft_stats <- function(df_stats, ...,
 
   invisible(
     mapply(function(col, align) {
+
       cols <- which(hdr_2_stats == col)
 
       if(length(cols)>0) {
@@ -456,17 +456,17 @@ ft_stats <- function(df_stats, ...,
   # ============  merge the "All Respondents" (row 1, where there is no subvar)
   # ========         with the first column if there is one
 
-  if(has_subvar) ft <- ft %>%
-    flextable::merge_h_range(i = 1, j1 = 1, j2 = 2) %>%
-    #flextable::align(i=1, j=1:2, "right") %>%
-    flextable::padding(i=1, j=1, padding.right = 18)
+  # if(has_subvar) ft <- ft %>%
+  #   flextable::merge_h_range(i = 1, j1 = 1, j2 = 2) %>%
+  #   #flextable::align(i=1, j=1:2, "right") %>%
+  #   flextable::padding(i=1, j=1, padding.right = 18)
 
   #  ======  if there are highlight_rows   ====================
 
   if(!is.null(highlights)) ft <- ft %>% ft_add_highlights(highlights)
 
 
-  #  ======  do the grid around the data if requird
+  #  ======  do the grid around the data if required
 
   if(!is.null(grid)) ft <- ft %>% ft_grid_table(grid = grid)
 
@@ -494,58 +494,4 @@ ft_stats <- function(df_stats, ...,
   ft
 }
 
-responses_rows <- function(ft) {
 
-  irow <- ft$header$sections$nrow$titles + 1
-  irow:(irow + ft$header$sections$nrow$responses - 1)
-
-}
-
-titles_rows <- function(ft) {
-
-  1:(ft$header$sections$nrow$titles)
-
-}
-
-stats_rows <- function(ft) {
-
-  irow <- ft$header$sections$nrow$titles + ft$header$sections$nrow$responses + 1
-  irow:(irow + ft$header$sections$nrow$stats - 1)
-
-}
-
-reused <- function(x,ny = 1) {
-
-  nx <- length(x)
-
-  ngr <- (ny %/% nx) + 1
-
-  ind <- rep(1:nx, ngr) %>% head(ny)
-
-  x[ind]
-
-}
-
-subvar_rows <- function(ft) {
-
-  subvars <- ft$body$dataset$subvar %>% unique() %>% {.[. != ""]}
-  which(ft$body$dataset$subset %in% subvars)
-
-}
-
-subset_rows <- function(ft) {
-
-  subvars <- ft$body$dataset$subvar %>% unique() %>% {.[. != ""]}
-  which(!ft$body$dataset$subset %in% subvars)
-
-}
-
-subset_row <- function(ft, subset) {
-
-  which(ft$body$dataset$subset == {{subset}})
-
-}
-
-# if null operator
-
-`%||%` <- function(x, y) if (is.null(x)) y else x

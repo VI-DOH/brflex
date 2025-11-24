@@ -4,18 +4,20 @@
 #'   Helper function to build list of font elements for sections to the
 #'   stats table to be use in call to ft_add_font()
 #'
-#' @param table - character (color)
-#' @param data  - character (color)
-#' @param header  - character (color)
-#' @param responses  - character (color)
-#' @param stats  - character (color)
-#' @param titles  - character (color)
-#' @param footer  - character (color)
+#' @param table - ft_font
+#' @param data  - ft_font
+#' @param header  - ft_font
+#' @param responses  - ft_font
+#' @param stats  - ft_font
+#' @param titles  - ft_font
+#' @param footer  - ft_font
 #'
 #' @returns list to pass as argument to ft_stats(fonts = list)
 #' @export
 #'
 #' @examples
+#' ft_font_list(data = ft_font(color = "darkblue", font.size = 12))
+#'
 ft_font_list <- function(table = NULL,
                          data = NULL,
                          header = NULL,
@@ -205,7 +207,7 @@ handle_fonts <- function(ft, fonts) {
 
     ft <- ft %>% handle_fonts_table(fonts) %>%
       handle_fonts_header(fonts) %>%
-      handle_fonts_data(fonts) %>%
+      handle_fonts_body(fonts) %>%
       handle_fonts_footer(fonts)  %>%
       handle_fonts_footnotes(fonts) %>%
       {.}
@@ -259,7 +261,7 @@ handle_fonts_titles <- function(ft, fonts) {
     if(! "list" %in% class(tit_fonts)) {
       #      if(class(tit_fonts) != "list") {
 
-      ft <<- ft_add_font(ft, i = irows, ft_text = tit_fonts, part = "header")
+      ft <- ft_add_font(ft, i = irows, ft_text = tit_fonts, part = "header")
 
     } else {
 
@@ -268,7 +270,7 @@ handle_fonts_titles <- function(ft, fonts) {
       purrr::map2(irows, tit_fonts, \(irow, fnt) {
 
         ft <<- ft_add_font(ft, i = irow, ft_text = fnt, part = "header")
-        #ft <<- ft_add_font(ft, i = irow, ft_text = tit_fonts[[irow]], part = "header")
+
 
       })
     }
@@ -294,7 +296,7 @@ handle_fonts_response <- function(ft, fonts) {
   ft
 }
 
-handle_fonts_data <- function(ft, fonts) {
+handle_fonts_body <- function(ft, fonts) {
 
   if(!is.null(fonts$data_fonts)) {
 
