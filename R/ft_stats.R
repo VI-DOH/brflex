@@ -14,27 +14,15 @@
 #' @param widths integer
 #' @param align character
 #' @param subset_placement character
-#' @param subset_sep fp_border object
-#' @param subvar_sep fp_border object
-#' @param denom_sep fp_border object
-#' @param data_sep fp_border object
-#' @param response_sep fp_border object
-#' @param stats_sep fp_border object
 #' @param col_padding integer
 #' @param default_font fp_font object
-#' @param table_font fp_font object
 #' @param line_spacing integer
 #' @param title_spacing integer
 #' @param response character
-#' @param header character
-#' @param header_font fp_font object
-#' @param data_font fp_font object
 #' @param titles character
-#' @param title_fonts fp_font object
 #' @param title_max_char integer
 #' @param highlights highlights object
 #' @param footers footers
-#' @param footer_fonts fp_font object
 #' @param footnotes footnotes object
 #' @param box box
 #' @param grid grid
@@ -50,33 +38,20 @@ ft_stats <- function(df_stats, ...,
                      responses = ".*",
                      rename = c(percent = "pct"),
                      widths = c(subset = 3, ci = 1),
-                     align = c(ci = "center"),
+                     aligns = c(ci = "center"),
                      subset_placement = "left",
-                     subset_sep = NULL, #ft_border(),
-                     subvar_sep = NULL, #ft_border(),
-                     denom_sep = NULL, #ft_border(),
-                     data_sep = NULL,
-                     response_sep = NULL, #ft_border(),
-                     stats_sep = NULL, #ft_border(),
                      col_padding = NULL, #c(percent = 0.05, den = 0.1),
                      line_spacing = 1.0,
                      title_spacing = 1.0,
-
-                     header = NULL,
                      titles = NULL,
                      title_max_char = 9999,
                      highlights = NULL,
                      footers = NULL,
                      footnotes = TRUE,
-
                      borders = list(),
-
                      bgs = list(),
-
                      fonts = list(),
-
                      paddings = list(),
-
                      box = NULL,
                      grid = NULL) {
 
@@ -132,10 +107,10 @@ ft_stats <- function(df_stats, ...,
   if(is.null(population) ) {
     if("population" %in%  names(attributes(df_stats))) {
 
-    population <- attr(df_stats, "population")
+      population <- attr(df_stats, "population")
 
-    df_stats <- df_stats %>%
-      mutate(subset = ifelse(subset == "All Respondents", population, subset))
+      df_stats <- df_stats %>%
+        mutate(subset = ifelse(subset == "All Respondents", population, subset))
     }
   } else {
 
@@ -239,17 +214,12 @@ ft_stats <- function(df_stats, ...,
 
   rename <- as.list(rename)
 
-  if(is.null(header)) {
+  invisible(
+    mapply(function(stat_in, stat_out) {
+      hdr_2_stats[hdr_2_stats == stat_in] <<- stat_out
+    }, names(rename), rename)
+  )
 
-    invisible(
-      mapply(function(stat_in, stat_out) {
-        hdr_2_stats[hdr_2_stats == stat_in] <<- stat_out
-      }, names(rename), rename)
-    )
-  } else {
-
-    hdr_2_stats <- header
-  }
 
   # ====================================================================
   #  === calculate tops of each new subset for a border    ==============
@@ -290,13 +260,14 @@ ft_stats <- function(df_stats, ...,
 
     ft <- ft %>%
       delete_part(part = "body") %>%
-      ft_add_data(df_tbl,
-                  subset_border = subset_sep)
+      ft_add_data(df_tbl)
+
   }
 
   ## ====   set placement info for use later   ======
 
-  attr(ft,"sub_placement") <- subset_placement
+#  attr(ft,"sub_placement") <- subset_placement
+  ft$properties["sub_placement"] <- subset_placement
 
   ft <- ft %>%
     flextable::delete_rows(i=1, part = "header")
@@ -368,76 +339,32 @@ ft_stats <- function(df_stats, ...,
 
   ft <- ft %>% handle_borders(borders = borders)
 
-  #################################################################
-  ##
-  ##      trying to make my borders functions
-  #            take the place of all of this
-
-  do_other_borders <- FALSE
-
-  if(do_other_borders) {
-    # add borders between data rows and data cols
-
-    if(!is.null(data_sep)) ft <- ft %>%
-        flextable::hline( border = data_sep, part = "body")
-
-    if(!is.null(data_sep)) ft <- ft %>%
-        flextable::vline( border = data_sep, part = "body")
-
-
-    # add borders between subsets
-
-    if(has_subvar && !is.null(subset_sep)) ft <- ft %>%
-        flextable::hline(i = bottom_bords, border = subset_sep, part = "body")
-
-    # add borders before denom
-
-    if(!is.null(denom_sep)) {
-
-      ft <- ft %>%
-        flextable::vline(j =  denom_col - 1, border = denom_sep, part = "body")
-
-    }
-
-
-    ft <- ft %>%
-      flextable::vline(j = right_bords, border = stats_sep, part = "header") %>%
-      flextable::vline(j = right_bords, border = fp_border(), part = "body") %>%
-      flextable::hline_bottom( j = 1:length(hdr_2_stats), border = fp_border())
-
-  }
-##############################################################################################
-
   # ======= handle line spacing for body  ===========
 
   ft <- ft %>%flextable::line_spacing(j = 1:length(hdr_2_stats), space = line_spacing, part = "body")
 
   #  ===========   handle columns widths    ===============
 
+  ft <- ft %>% handle_widths(widths = widths)
 
-  invisible(
-    mapply(function(col, width) {
 
-      cols <- which(hdr_2_stats == col)
-      if(length(cols) == 0) cols <- which(colnames(df_stats) == col)
-
-      if(length(cols) > 0) ft <<- ft %>%  flextable::width(j = cols, width = width)
-    }, names(widths), widths)
-  )
 
   #  ===========   handle column alignment    ===============
 
-  invisible(
-    mapply(function(col, align) {
+  ft <- ft %>% handle_aligns(aligns = aligns)
 
-      cols <- which(hdr_2_stats == col)
-
-      if(length(cols)>0) {
-        ft <<- ft %>%
-          flextable::align(j = cols, align = align)
-      }
-    }, names(align), align)
-  )
+  #
+  # invisible(
+  #   mapply(function(col, align) {
+  #
+  #     cols <- which(hdr_2_stats == col)
+  #
+  #     if(length(cols)>0) {
+  #       ft <<- ft %>%
+  #         flextable::align(j = cols, align = align)
+  #     }
+  #   }, names(align), align)
+  # )
 
   #  ===========   handle column padding    ===============
 
@@ -455,11 +382,6 @@ ft_stats <- function(df_stats, ...,
 
   # ============  merge the "All Respondents" (row 1, where there is no subvar)
   # ========         with the first column if there is one
-
-  # if(has_subvar) ft <- ft %>%
-  #   flextable::merge_h_range(i = 1, j1 = 1, j2 = 2) %>%
-  #   #flextable::align(i=1, j=1:2, "right") %>%
-  #   flextable::padding(i=1, j=1, padding.right = 18)
 
   #  ======  if there are highlight_rows   ====================
 

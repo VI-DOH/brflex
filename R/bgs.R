@@ -17,6 +17,8 @@
 #' @export
 #'
 #' @examples
+#' ft_bg_list(subvars = "#eeeeee")
+#'
 ft_bg_list <- function(table = NULL,
                        data = NULL,
                        header = NULL,
@@ -177,7 +179,7 @@ handle_bg_subsets <- function(ft, bgs) {
 
       } else {
 
-        irows <- subvar_rows(ft)
+        irows <- subvar_rows(ft) %>% tail(-1) %>% pull(min) %>% {.-1}
         jcol <- NULL
 
       }

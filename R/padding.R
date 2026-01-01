@@ -1,3 +1,48 @@
+
+#' Flextable Backgrounds Helper
+#'
+#'   Helper function to build list of background elements for sections to the
+#'   stats table to be use in call to padding()
+#'
+#' @param table - character (color)
+#' @param data  - character (color)
+#' @param header  - character (color)
+#' @param responses  - character (color)
+#' @param stats  - character (color)
+#' @param titles  - character (color)
+#' @param footer  - character (color)
+#' @param subsets  - character (color)
+#'
+#' @returns list to pass as argument to ft_stats(paddings = list)
+#' @export
+#'
+#' @examples
+#' ft_paddings_list(subvars = ft_padding(top = 1))
+#'
+ft_paddings_list <- function(table = NULL,
+                       data = NULL,
+                       header = NULL,
+                       responses = NULL,
+                       stats = NULL,
+                       titles = NULL,
+                       footer = NULL,
+                       subvars = NULL,
+                       subsets = NULL){
+
+  structure(
+    list(table_padding = table,
+         data_padding = data,
+         header_padding = header,
+         stats_padding = stats,
+         titles_padding = titles,
+         footer_padding = footer,
+         responses_padding = responses,
+         subvars_padding = subvars,
+         subsets_padding = subsets),
+    class = "ft_paddings_list")
+
+}
+
 #' Flextable Padding
 #'
 #' @param top integer
@@ -10,10 +55,12 @@
 #'
 ft_padding <- function(top = NA, bottom = NA, left = NA, right = NA) {
 
-  c(top = top,
+  structure(
+    c(top = top,
     bottom = bottom,
     left = left,
-    right = right
+    right = right),
+    class = "ft_padding"
   )
 
 }

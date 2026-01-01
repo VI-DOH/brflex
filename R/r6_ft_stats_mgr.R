@@ -1,63 +1,75 @@
 library(R6)
 
+#' @export
 FT_StatsMgr <- R6Class(
   classname = "FT_StatsMgr",
 
   private = list(
-    df_stats = NULL,
-    props = NULL
+    stats_mgr = NULL,
+    props = NULL,
+    use_first_factor = FALSE
   ),
 
   public = list(
 
-    initialize = function(props) {
+    initialize = function(props = NULL, stats_mgr = NULL, use_first_factor = FALSE) {
 
       if(!is.null(props) ) {
 
-        if(class(value) == "FT_StatPropsMgr") {
+        if("FT_StatProps" %in% class(props)) {
           private$props <- props
+        }
+      }
+      if(!is.null(props) ) {
+
+        if("StatsMgr" %in% class(stats_mgr)) {
+          private$stats_mgr <- stats_mgr
         }
       }
     },
 
-    ft = function() {
+    ft = function(coi = NULL) {
+
+      df_stats <- private$stats_mgr$survey_stats(coi = coi)
+
+      props <- private$props
+
+      if(private$use_first_factor) {
+
+        resp <- stats_mgr$survey_stats() %>% pull(response) %>% {.[1]}
+        private$props$responses <- paste0("^", resp, "$")
+
+      }
 
       ft_stats(df_stats = df_stats,
-               coi = props$coi,
-               population = NULL,
-               stats = c("den", "num", "percent", "ci"),
-               exclude = "^$",
-               responses = ".*",
+               coi = NULL,
+               population = props$population,
+               stats = props$stats,
+               exclude =  props$exclude,
+               responses = props$responses,
                rename = c(percent = "pct"),
-               widths = c(subset = 3, ci = 1),
-               align = c(ci = "center"),
-               subset_placement = "left",
-               subset_sep = flextable::fp_border_default(),
-               subvar_sep = flextable::fp_border_default(),
-               denom_sep = flextable::fp_border_default(),
-               data_sep = flextable::fp_border_default(),
-               response_sep = flextable::fp_border_default(),
-               stats_sep = flextable::fp_border_default(),
+               widths = props$widths,
+               aligns = props$aligns,
+               subset_placement = props$subset_placement,
                line_spacing = 1.0,
                title_spacing = 1.0,
 
-               header = NULL,
-               titles = NULL,
+               titles = props$titles,
                title_max_char = 9999,
-               highlights = NULL,
+               highlights = props$highlights,
                footers = NULL,
-               footnotes = TRUE,
+               footnotes = props$footnotes,
 
-               borders = ft_borders_list(),
+               borders = props$borders,
 
-               bgs = list(),
+               bgs = props$bgs,
 
-               fonts = list(),
+               fonts = props$fonts,
 
-               paddings = list(),
+               paddings = props$paddings,
 
-               box = NULL,
-               grid = NULL
+               box = props$box,
+               grid = props$grid
                )
     }
 
@@ -65,7 +77,7 @@ FT_StatsMgr <- R6Class(
 
   active = list(
 
-    stats = function(value) {
+    data = function(value) {
 
       if(missing(value)) return(private$df_stats)
 
@@ -75,13 +87,13 @@ FT_StatsMgr <- R6Class(
 
     },
 
-    borders = function(value) {
+    first_response = function(value) {
 
-      if(missing(value)) return(private$borders_pvt)
+      if(missing(value)) return(private$use_first_factor)
 
-      if(class(value) != "ft_borders_list") return(NULL)
+      if(!class(value) == "logical") return(NULL)
 
-      private$borders_pvt <- value
-    }
+      private$use_first_factor <-value
+   }
   )
 )

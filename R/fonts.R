@@ -241,7 +241,7 @@ handle_fonts_header <- function(ft, fonts) {
   ft <-   ft <- ft %>%
     handle_fonts_response(fonts)%>%
     handle_fonts_stats(fonts) %>%
-    handle_fonts_response(fonts)%>%
+#    handle_fonts_response(fonts)%>%
     handle_fonts_titles(fonts)
 
 
@@ -302,6 +302,32 @@ handle_fonts_body <- function(ft, fonts) {
 
     ft <- ft %>%
       ft_add_font( ft_text = fonts$data_fonts , part = "body")
+
+    ft <- ft %>%
+      handle_fonts_subvars(fonts)
+
+  }
+
+  ft
+}
+
+handle_fonts_subvars <- function(ft, fonts) {
+
+
+  if(!is.null(fonts$subvars_fonts)) {
+    irows <- subvar_rows(ft)
+
+    if(irows[2,"min"] == 3) {
+      irows <- irows$min - 1
+      irows <- irows[irows>1]
+
+    } else {
+      irows <- irows$min
+      irows <- irows[irows>1]
+    }
+
+    ft <- ft %>%
+      ft_add_font(i = irows, j = 1, ft_text = fonts$subvars_fonts , part = "body")
 
   }
 

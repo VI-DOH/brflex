@@ -23,6 +23,24 @@ ft_borders <- function(top = NA, bottom = NA, midv = NA,
 
 }
 
+#' @export
+print.ft_borders <- function(x, ...) {
+
+  x <- x %>% replace(.,is.na(.), NULL)
+
+  purrr::map(names(x), \(nm) {
+    data.frame(what = nm,
+               color = x[[nm]][["color"]],
+               style = x[[nm]][["style"]],
+               width = x[[nm]][["width"]]
+               )
+    }) %>% bind_rows() %>%
+    print()
+
+  invisible()
+
+}
+
 #' List of Borders
 #'
 #' @param table - ft_borders
@@ -35,10 +53,19 @@ ft_borders <- function(top = NA, bottom = NA, midv = NA,
 #' @param subvars - ft_borders
 #' @param subsets - ft_borders
 #'
-#' @returns
+#' @returns ft_borders_list
 #' @export
 #'
 #' @examples
+#'
+#' solid_brdr <- officer::fp_border(style = "solid", color = "grey11", width = 1)
+#' dotted_brdr <- officer::fp_border(style = "dotted", color = "grey11", width = 1)
+
+#' ft_borders_list(
+#' responses = ft_borders(left = solid_brdr,
+#'                        right = solid_brdr,
+#'                        midv = dotted_brdr)
+#'
 ft_borders_list <- function(table = NULL,
                             data = NULL,
                             header = NULL,
@@ -289,7 +316,7 @@ handle_borders_response <- function(ft, borders) {
         jcols <- df_types %>% filter(right) %>% pull(jcol)
 
         brdtmp <- brdr
-        brdtmp$left <- NA
+        brdtmp$left <- brdtmp$midv
 
         ft <- ft %>%
           make_border(j = jcols, i = irows, borders = brdtmp, part = "body")
@@ -300,7 +327,7 @@ handle_borders_response <- function(ft, borders) {
 
       # ------------ handle the middle rows -------------------
 
-      if(!all(is.na(brdr$midh))) {
+      if(!all(is.na(brdr$midv))) {
         jcols <- df_types %>% filter(mid) %>% pull(jcol)
 
         brdtmp <- brdr
@@ -472,3 +499,65 @@ handle_borders_footer <- function(ft, borders) {
 
   ft
 }
+
+ft_blank_border <-  function() { fp_border(color = "white", style = "none", width = 0) }
+
+
+ft_box_table <- function(ft, box) {
+
+  if(box$style == "none") box$width <- 0
+
+  box_border <-  fp_border(color = box$color,
+                           style = box$style,
+                           width = box$width )
+
+  sides <- strsplit(box$what, "")[[1]]
+
+  top <- if("t" %in% sides) top <- box_border else top <- ft_blank_border()
+  bottom <- if("b" %in% sides) bottom <- box_border else bottom <- ft_blank_border()
+  left <- if("l" %in% sides) left <- box_border else left <- ft_blank_border()
+  right <- if("r" %in% sides) right <- box_border else right <- ft_blank_border()
+
+  ft %>%
+    flextable::vline_left(border = left) %>%
+    flextable::vline_right(border = right) %>%
+    flextable::hline_top(border = top, part = "header") %>%
+    flextable::hline_bottom(border = bottom, part = "footer")
+
+}
+
+ft_grid_table <- function(ft, grid) {
+
+  nrow_body <- ft %>%  nrow_part("body")
+
+  if(grid$style == "none") grid$width  <-  0
+
+  ft %>% border(i = 1:nrow_body, j = 1:ncol_keys(ft),  border=grid, part = "body")
+
+}
+
+#' Build Box Info Object
+#'
+#' @param what - character
+#' @param color - character
+#' @param] width - integer
+#' @param style  - character
+#'
+#' @returns ft_box
+#' @export
+#'
+#' @examples
+#'
+#' box = ft_box(what = "trl", color = "black", style = "dotted")
+#'
+ft_box <- function(what = "lrtb", color = "black",  width = 1, style = "solid"){
+
+
+  structure(list(
+    what = what,
+    color = color,
+    width = width,
+    style = style
+  ), class = "ft_box")
+}
+

@@ -82,7 +82,7 @@ response_cols <- function(ft) {
   df %>% group_by(resp ,grp) %>%
     summarise(min = min(jcol), max = max(jcol)) %>%
     filter(resp != "") %>%
-    arrange(min)
+    arrange(min) %>% ungroup()
 
 
 }
@@ -103,7 +103,7 @@ response_col_types <- function(ft) {
     mutate(right  = !is.na(min)) %>%
     select(jcol, left, right) %>%
     mutate(mid = !(left | right)) %>%
-    left_join(df) %>% filter(resps != "")
+    left_join(df, by = join_by(jcol)) %>% filter(resps != "")
 
 }
 

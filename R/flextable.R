@@ -100,61 +100,6 @@ ft_merge_font <- function(x = NULL, color = NULL, font = NULL, font.size = NULL,
 }
 
 
-ft_save_theme <- function(name = "unnamed", population = NULL,
-                          stats = c("den", "num", "percent", "ci"),
-                          digits = 2,
-                          rename = c(percent = "pct"),
-                          widths = c(subset = 3, ci = 1),
-                          align = c(ci = "center"),
-                          padding = c(percent = 0.05, den = 0.1),
-                          table_font = NULL,
-                          table_bg = "white",
-                          line_spacing = 1.0,
-                          title_spacing = 1.0,
-                          header_font =  NULL,
-                          data_font =  NULL,
-                          titles = NULL,
-                          title_fonts = NULL,
-                          title_max_char = 9999,
-                          box = TRUE, box_color = "black",
-                          data_sep = NULL,
-                          subset_sep = ft_border(),
-                          denom_sep = ft_border(),
-                          highlight_rows = NULL,
-                          highlight_fonts = ft_font(shading.color = "yellow", as.list = TRUE),
-                          footers = NULL,
-                          footer_fonts = NULL,
-                          footnotes = TRUE) {
-
-
-  file <- paste0("./data/ft_themes/", name,".rds")
-
-  dir.create(dirname(file))
-
-  grabFunctionParameters() %>%
-    saveRDS(file = file)
-
-
-}
-
-grabFunctionParameters <- function() {
-  pf <- parent.frame()
-  args_names <- ls(envir = pf, all.names = TRUE, sorted = FALSE)
-  if("..." %in% args_names) {
-    dots <- eval(quote(list(...)), envir = pf)
-  }  else {
-    dots = list()
-  }
-  args_names <- sapply(setdiff(args_names, "..."), as.name)
-  if(length(args_names)) {
-    not_dots <- lapply(args_names, eval, envir = pf)
-  } else {
-    not_dots <- list()
-  }
-  out <- c(not_dots, dots)
-  out[names(out) != ""]                                  # remove unnamed values in ... (if any)
-}
-
 gsub_attr <- function(x, attr, delim = "{}") {
 
   delim1 <- substr(delim,1,1)
@@ -185,13 +130,33 @@ gsub_attr <- function(x, attr, delim = "{}") {
   ret
 }
 
-ft_add_data <- function(ft, df, subset_border) {
+my_na <- function(x) {
+
+  my_class <- class(x)
+  browser()
+  na_value <- switch(
+    my_class,
+    "integer" = NA_integer_,
+    "numeric" = NA_real_,
+    "logical" = NA,
+    "character" = NA_character_,
+    "factor" = factor(NA, levels = levels(x)),
+    NA  # fallback
+  )
+  na_value
+}
+
+ft_add_data <- function(ft, df) {
 
   ncols <- ncol(df)
 
   last_sub <- ""
   num_cols <- grep("num^", colnames(df))
+
   df <- df %>% mutate(across(starts_with("num"), as.integer))
+
+  ft$body$dataset <-ft$body$dataset %>% mutate(across(starts_with("num"), as.integer))
+  new_row <- df[0, ] %>% add_row(subvar = "", subset = "")
 
   frow <- 0  # the actual flextable row
 
@@ -199,33 +164,52 @@ ft_add_data <- function(ft, df, subset_border) {
 
     #  ----  x will be the row of data   ------------
 
-    x <- df[irow,] %>% as.list()
+    x <- df[irow,]
+
+    x_lst <- x %>% as.list()
 
     #  -----  get this subvar ... if it has changed we need to insert a subset name row
 
-    subv <- x[["subvar"]]
+    subv <- x_lst[["subvar"]]
 
     if(irow>1 && !is.null(subv) && subv != last_sub) {
 
       frow <<- frow + 1
 
-      ft <<- ft %>%  flextable::add_body_row(c("",subv, rep("", ncols-2)), top = FALSE) %>%
-        merge_h_range(i = frow, j1 = 2, j2 = ncols) %>%
-        hline(i = (frow-1):frow,border = subset_border)
+      new_row[1,"subvar"] <<- ""
+      new_row[1,"subset"] <<- subv
 
+      nr_list <- as.list(new_row)
 
+      #ft$body$dataset <<-  ft$body$dataset %>% add_row(new_row)
+
+      ft <<- ft %>%
+        add_body(top = FALSE, values = nr_list) %>%
+        merge_h_range(i = frow, j1 = 2, j2 = ncols)
 
     }
+
     frow <<- frow + 1
 
-    ft <<- ft %>%  flextable::add_body_row(x, top = FALSE) %>%
+    #ft$body$dataset <<-  ft$body$dataset %>% add_row(x)
+
+    ft <<- ft %>%
+      add_body(top = FALSE, values = x_lst)%>%
       align(i = frow,j = 3:ncols, align = "right") %>%
       hline(i = frow, border = ft_blank_border())
 
     last_sub <<- subv
   })
 
-  ft %>% delete_columns(j=1)
+  rspans <- ft$body$spans$rows[,-1]
+
+  ft <- ft %>% delete_columns(j=1)
+
+  ft$body$spans$rows <- rspans
+
+  ft
+
+
 }
 
 which_subvar <- function(subvar, subvars) {
@@ -294,8 +278,8 @@ ft_add_resp_hdr <- function(ft, values) {
     flextable::add_header_row (top = FALSE, values = values) %>%
     flextable::merge_h(i = resp_row, part = "header")  %>%
     flextable::align(i = resp_row, align = "center", part = "header") #%>%
-    # flextable::vline(i = resp_row, j = vline_cols, border = fp_border(),
-    #                  part = "header")
+  # flextable::vline(i = resp_row, j = vline_cols, border = fp_border(),
+  #                  part = "header")
 
   ft
 
@@ -323,64 +307,6 @@ ft_add_stats_hdr <- function(ft, values) {
                      align = "center", part = "header")
   ft
 
-}
-
-ft_blank_border <-  function() { fp_border(color = "white", style = "none", width = 0) }
-
-
-ft_box_table <- function(ft, box) {
-
-  if(box$style == "none") box$width <- 0
-
-  box_border <-  fp_border(color = box$color,
-                           style = box$style,
-                           width = box$width )
-
-  sides <- strsplit(box$what, "")[[1]]
-
-  top <- if("t" %in% sides) top <- box_border else top <- ft_blank_border()
-  bottom <- if("b" %in% sides) bottom <- box_border else bottom <- ft_blank_border()
-  left <- if("l" %in% sides) left <- box_border else left <- ft_blank_border()
-  right <- if("r" %in% sides) right <- box_border else right <- ft_blank_border()
-
-  ft %>%
-    flextable::vline_left(border = left) %>%
-    flextable::vline_right(border = right) %>%
-    flextable::hline_top(border = top, part = "header") %>%
-    flextable::hline_bottom(border = bottom, part = "footer")
-
-}
-
-ft_grid_table <- function(ft, grid) {
-
-  nrow_body <- ft %>%  nrow_part("body")
-
-  if(grid$style == "none") grid$width  <-  0
-
-  ft %>% border(i = 1:nrow_body, j = 1:ncol_keys(ft),  border=grid, part = "body")
-
-}
-
-#' Build Box Info Object
-#'
-#' @param what - character
-#' @param color - character
-#' @param width - integer
-#' @param style  - character
-#'
-#' @returns
-#' @export
-#'
-#' @examples
-ft_box <- function(what = "lrtb", color = "black",  width = 1, style = "solid"){
-
-
-  structure(list(
-    what = what,
-    color = color,
-    width = width,
-    style = style
-  ), class = "ft_box")
 }
 
 
@@ -439,7 +365,7 @@ ft_dispo_codes <- function(df_brfss, type , data_col = NULL){
 
 ft_questions <- function(x, use_label = FALSE) {
 
-  lo_mgr <- Layout_Mgr$new()
+  lo_mgr <- brfss::Layout_Mgr$new()
   lo_mgr$layout_from_data()
   df_lo <- lo_mgr$data_layout()
 
@@ -496,4 +422,73 @@ split_before <- function(x, before = 80, collapse = NULL) {
   })
 
   ret
+}
+
+handle_widths <- function(ft, widths) {
+
+  invisible(
+    mapply(function(col, width) {
+
+      key_names <-  gsub("^.*", "",ft$col_keys)
+
+      cols <- which(key_names == col)
+
+      if(length(cols) == 0) {
+        key_names <- ft$header$content$data %>% tail(1) %>%
+          purrr::map(~.x["txt"][[1]]) %>%
+          purrr::map(~.x[1]) %>% as.character()
+        cols <- which(key_names == col)
+      }
+
+      if(length(cols) > 0) ft <<- ft %>%  flextable::width(j = cols, width = width)
+    }, names(widths), widths)
+
+  )
+
+  ft
+}
+
+handle_aligns <- function(ft, aligns) {
+
+  key_names <-  gsub("\\^.*", "",ft$col_keys)
+
+  key_names2 <- ft$header$content$data %>% tail(1) %>%
+    purrr::map(~.x["txt"][[1]]) %>%
+    purrr::map(~.x[1]) %>% as.character()
+
+  invisible(
+    mapply(function(col, align) {
+
+      if(col == "subset") {
+
+        cols <- which(key_names == "subset")
+
+        if(ft$properties["sub_placement"] == "top") {
+
+          irows <- which(ft$body$spans$rows[,cols] == 1)
+        } else {
+          irows = NULL
+        }
+      } else {
+
+
+        cols <- which(key_names == col)
+
+        if(length(cols) == 0) {
+          cols <- which(key_names2 == col)
+        }
+
+        irows = NULL
+      }
+
+      if(length(cols) > 0) {
+        ft <<- ft %>%
+          flextable::align(i = irows, j = cols, align = align)
+      }
+
+    }, names(aligns), aligns)
+
+  )
+
+  ft
 }
