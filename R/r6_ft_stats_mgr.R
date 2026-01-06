@@ -6,21 +6,22 @@ FT_StatsMgr <- R6Class(
 
   private = list(
     stats_mgr = NULL,
-    props = NULL,
+    props_mgr = NULL,
     use_first_factor = FALSE
   ),
 
   public = list(
 
-    initialize = function(props = NULL, stats_mgr = NULL, use_first_factor = FALSE) {
+    initialize = function(props_mgr = NULL, stats_mgr = NULL,
+                          use_first_factor = FALSE) {
 
-      if(!is.null(props) ) {
+      if(!is.null(props_mgr) ) {
 
-        if("FT_StatProps" %in% class(props)) {
-          private$props <- props
+        if("FT_StatPropsMgr" %in% class(props_mgr)) {
+          private$props_mgr <- props_mgr
         }
       }
-      if(!is.null(props) ) {
+      if(!is.null(stats_mgr) ) {
 
         if("StatsMgr" %in% class(stats_mgr)) {
           private$stats_mgr <- stats_mgr
@@ -32,44 +33,46 @@ FT_StatsMgr <- R6Class(
 
       df_stats <- private$stats_mgr$survey_stats(coi = coi)
 
-      props <- private$props
+      props_mgr <- private$props_mgr
 
       if(private$use_first_factor) {
 
         resp <- stats_mgr$survey_stats() %>% pull(response) %>% {.[1]}
-        private$props$responses <- paste0("^", resp, "$")
+        private$props_mgr$responses <- paste0("^", resp, "$")
 
       }
 
       ft_stats(df_stats = df_stats,
                coi = NULL,
-               population = props$population,
-               stats = props$stats,
-               exclude =  props$exclude,
-               responses = props$responses,
+               population = props_mgr$population,
+               stats = props_mgr$stats,
+               exclude =  props_mgr$exclude,
+               responses = props_mgr$responses,
                rename = c(percent = "pct"),
-               widths = props$widths,
-               aligns = props$aligns,
-               subset_placement = props$subset_placement,
+               widths = props_mgr$widths,
+               aligns = props_mgr$aligns,
+               subset_placement = props_mgr$subset_placement,
                line_spacing = 1.0,
                title_spacing = 1.0,
 
-               titles = props$titles,
+               titles = props_mgr$titles,
                title_max_char = 9999,
-               highlights = props$highlights,
+               highlights = props_mgr$highlights,
                footers = NULL,
-               footnotes = props$footnotes,
+               footnotes = props_mgr$footnotes,
 
-               borders = props$borders,
+               borders = props_mgr$borders,
 
-               bgs = props$bgs,
+               bgs = props_mgr$bgs,
+               bgs_mgr = props_mgr$bgs_mgr,
 
-               fonts = props$fonts,
+               fonts = props_mgr$fonts,
+               fonts_mgr = props_mgr$fonts_mgr,
 
-               paddings = props$paddings,
+               paddings = props_mgr$paddings,
 
-               box = props$box,
-               grid = props$grid
+               box = props_mgr$box,
+               grid = props_mgr$grid
                )
     }
 

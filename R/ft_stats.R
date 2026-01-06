@@ -50,7 +50,9 @@ ft_stats <- function(df_stats, ...,
                      footnotes = TRUE,
                      borders = list(),
                      bgs = list(),
+                     bgs_mgr = NULL,
                      fonts = list(),
+                     fonts_mgr = NULL,
                      paddings = list(),
                      box = NULL,
                      grid = NULL) {
@@ -266,7 +268,7 @@ ft_stats <- function(df_stats, ...,
 
   ## ====   set placement info for use later   ======
 
-#  attr(ft,"sub_placement") <- subset_placement
+  #  attr(ft,"sub_placement") <- subset_placement
   ft$properties["sub_placement"] <- subset_placement
 
   ft <- ft %>%
@@ -325,11 +327,26 @@ ft_stats <- function(df_stats, ...,
 
   # =========  do the fonts  ================
 
-  ft <- ft %>% handle_fonts(fonts = fonts)
-
+  if(!is.null(fonts_mgr)) {
+    if(inherits(fonts_mgr, "FT_FontsMgr")) {
+      ft <- ft %>% fonts_mgr$apply()
+    } else {
+      message("Invalid fonts_mgr ... does not inherit class <FT_FontsMgr>")
+    }
+  } else {
+    ft <- ft %>% handle_fonts(fonts = fonts)
+  }
   # =========  do the backgrounds  ================
 
-  ft <- ft %>% handle_bgs(bgs = bgs)
+  if(!is.null(bgs_mgr)) {
+    if(inherits(bgs_mgr, "FT_BGsMgr")) {
+      ft <- ft %>% bgs_mgr$apply()
+    } else {
+      message("Invalid bgs_mgr ... does not inherit class <FT_BGsMgr>")
+    }
+  } else {
+    ft <- ft %>% handle_bgs(bgs = bgs)
+  }
 
   # =========  do the paddings  ================
 

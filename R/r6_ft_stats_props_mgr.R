@@ -1,8 +1,8 @@
 library(R6)
 
 #' @export
-FT_StatProps <- R6Class(
-  classname = "FT_StatProps",
+FT_StatPropsMgr <- R6Class(
+  classname = "FT_StatPropsMgr",
 
   private = list(
     population_pvt = NULL,
@@ -30,8 +30,10 @@ FT_StatProps <- R6Class(
     borders_pvt = ft_borders_list(),
 
     bgs_pvt = list(),
+    bgs_mgr_pvt = list(),
 
     fonts_pvt = list(),
+    fonts_mgr_pvt = NULL,
 
     paddings_pvt = list(),
 
@@ -164,6 +166,28 @@ FT_StatProps <- R6Class(
   ),
 
   active = list(
+
+    fonts_mgr = function(value) {
+
+      if(missing(value)) return(private$fonts_mgr_pvt)
+
+      if(!inherits(value, "FT_FontsMgr") && !is.null(value)) {
+        message("fonts_mgr must be class <FT_FontsMgr>")
+        return()
+      }
+      private$fonts_mgr_pvt <- value
+    },
+
+    bgs_mgr = function(value) {
+
+      if(missing(value)) return(private$bgs_mgr_pvt)
+
+      if(!inherits(value, "FT_BGsMgr") && !is.null(value)) {
+        message("bgs_mgr must be class <FT_BGsMgr>")
+        return()
+      }
+      private$bgs_mgr_pvt <- value
+    },
 
     fonts = function(value) {
 

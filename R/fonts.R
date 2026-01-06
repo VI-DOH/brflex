@@ -280,8 +280,6 @@ handle_fonts_titles <- function(ft, fonts) {
   ft
 }
 
-
-
 handle_fonts_response <- function(ft, fonts) {
 
   if(!is.null(fonts$response_fonts) && ft$header$sections$nrow$responses > 0) {
@@ -313,7 +311,6 @@ handle_fonts_body <- function(ft, fonts) {
 
 handle_fonts_subvars <- function(ft, fonts) {
 
-
   if(!is.null(fonts$subvars_fonts)) {
     irows <- subvar_rows(ft)
 
@@ -327,7 +324,8 @@ handle_fonts_subvars <- function(ft, fonts) {
     }
 
     ft <- ft %>%
-      ft_add_font(i = irows, j = 1, ft_text = fonts$subvars_fonts , part = "body")
+      ft_add_font(i = irows, j = 1, ft_text = fonts$subvars_fonts ,
+                  part = "body")
 
   }
 
