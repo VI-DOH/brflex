@@ -133,7 +133,7 @@ gsub_attr <- function(x, attr, delim = "{}") {
 my_na <- function(x) {
 
   my_class <- class(x)
-  browser()
+
   na_value <- switch(
     my_class,
     "integer" = NA_integer_,

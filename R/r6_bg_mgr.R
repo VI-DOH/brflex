@@ -58,7 +58,17 @@ FT_BGsMgr <-
         purrr::walk(args, \(arg) {
 
 
-          private$bg[[paste0(arg, "_pvt")]] <- list(get(arg))
+          value <- get(arg)
+
+          if(is.character(value) && FT_Color$is_valid(value)) {
+            value <- list(FT_Bg$new(value))
+          } else if(inherits(value, FT_Color)) {
+            value <- list(value)
+          } else {
+            value <- NULL
+          }
+
+          private$bg[[paste0(arg, "_pvt")]] <- value
 
         })
 

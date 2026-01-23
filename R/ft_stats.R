@@ -77,10 +77,9 @@ ft_stats <- function(df_stats, ...,
     return(NULL)
   }
 
-
   df_stats <- df_stats %>%
-    filter(!grepl(exclude, subset)) %>%
-    filter(grepl(responses, response))
+    filter(!grepl(exclude, subset)) #%>%
+    #filter(grepl(responses, response))
 
   if(nrow(df_stats) == 0) {
 
@@ -321,7 +320,11 @@ ft_stats <- function(df_stats, ...,
   ##
   ##      ===========   handle footnotes    ===============
 
-  if(footnotes) ft <- ft %>% add_footnotes(hdr_2_stats, population)
+  weighted <- df_stats %>% attr("weighted")
+  ftnote_stats <- hdr_2_stats
+  if(!is.null(weighted) && !weighted) hdr_2_stats <- hdr_2_stats[!hdr_2_stats %in% "pct"]
+
+  if(footnotes) ft <- ft %>% add_footnotes(ftnote_stats, population)
 
   ft$header$sections <- sections
 

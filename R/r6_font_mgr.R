@@ -26,7 +26,6 @@
 
   if (!inherits(fnt0, "FT_Font") || !inherits(fnt1, "FT_Font")) {
 
-    browser()
     stop("Can only add two FT_Font objects")
   }
   fnt_new <- fnt0$clone()
