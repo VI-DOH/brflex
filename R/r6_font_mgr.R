@@ -210,11 +210,22 @@ FT_FontsMgr <-
 
         } else {
 
-          jcols_subvars <- 1
-          irows_subvars <- which(ft$body$spans$rows[,1] > 1)
+          rowspans <- ft$body$spans$rows
+          if(!is.null(dim(rowspans))) {
+            jcols_subvars <- 1
+            irows_subvars <- which(ft$body$spans$rows[,1] > 1)
 
-          jcols_subsets <- 1
-          irows_subsets <- which(ft$body$spans$rows[,1] == 1)
+            jcols_subsets <- 1
+            irows_subsets <- which(ft$body$spans$rows[,1] == 1)
+          } else {
+            jcols_subvars <- 1
+            irows_subvars <- 1
+
+            jcols_subsets <- 0
+            irows_subsets <- 0
+
+          }
+
         }
 
         nrow_header <- ft$header$content$nrow
@@ -224,16 +235,18 @@ FT_FontsMgr <-
         # handle_fonts_response(fonts)%>%
         #   handle_fonts_stats(fonts) %>%
         #self$apply_titles(ft)
-        ft %>%
+        ft <- ft %>%
           self$apply_area("titles", i = 1:nrow_titles, part = "header") %>%
           self$apply_area("responses", i = nrow_header - 1, part = "header") %>%
           self$apply_area("stats", i = nrow_header, part = "header")  %>%
-          self$apply_area("data", part = "body") %>%
-          self$apply_area("subvars", i = irows_subvars, j = jcols_subvars, part = "body") %>%
-          self$apply_area("subsets", i = irows_subsets, j = jcols_subsets, part = "body") %>%
-          self$apply_area("footnotes",  part = "footer")
+          self$apply_area("data", part = "body")%>%
+          self$apply_area("footnotes",  part = "footer") %>%
+          self$apply_area("subvars", i = irows_subvars, j = jcols_subvars, part = "body")
 
+        if(irows_subsets[1] > 0) ft <- ft %>%
+          self$apply_area("subsets", i = irows_subsets, j = jcols_subsets, part = "body")
 
+        ft
       },
 
       apply_area = function(ft, area, i = NULL, j = NULL, part) {

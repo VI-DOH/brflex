@@ -23,6 +23,88 @@ ft_borders <- function(top = NA, bottom = NA, midv = NA,
 
 }
 
+#' Flextable cell (or range) borders
+#'
+#' @param top fp_border
+#' @param bottom fp_border
+#' @param left fp_border
+#' @param right fp_border
+#'
+#' @returns list
+#' @export
+#'
+ft_all_borders <- function(border) {
+
+  if(inherits(border, "fp_border")) {
+    structure(
+      list(top = border,
+           bottom = border,
+           left = border,
+           right = border,
+           midv = border,
+           midh = border),
+      class = "ft_borders"
+    )
+  }
+
+
+}
+
+#' Flextable cell (or range) borders
+#'
+#' @param top fp_border
+#' @param bottom fp_border
+#' @param left fp_border
+#' @param right fp_border
+#'
+#' @returns list
+#' @export
+#'
+ft_outside_borders <- function(border) {
+
+  if(inherits(border, "fp_border")) {
+    structure(
+      list(top = border,
+           bottom = border,
+           left = border,
+           right = border,
+           midv = NULL,
+           midh = NULL),
+      class = "ft_borders"
+    )
+  }
+
+
+}
+
+#' Flextable cell (or range) borders
+#'
+#' @param top fp_border
+#' @param bottom fp_border
+#' @param left fp_border
+#' @param right fp_border
+#'
+#' @returns list
+#' @export
+#'
+ft_inside_borders <- function(border) {
+
+  if(inherits(border, "fp_border")) {
+    structure(
+      list(top = NULL,
+           bottom = NULL,
+           left = NULL,
+           right = NULL,
+           midv = border,
+           midh = border),
+      class = "ft_borders"
+    )
+  }
+
+
+}
+
+
 #' @export
 print.ft_borders <- function(x, ...) {
 
@@ -33,8 +115,8 @@ print.ft_borders <- function(x, ...) {
                color = x[[nm]][["color"]],
                style = x[[nm]][["style"]],
                width = x[[nm]][["width"]]
-               )
-    }) %>% bind_rows() %>%
+    )
+  }) %>% bind_rows() %>%
     print()
 
   invisible()

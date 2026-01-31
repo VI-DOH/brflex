@@ -9,7 +9,7 @@ Authors@R: c(
       role = c("aut", "cre")
     )
   )
-Description: Creates flextables to for BRFSS objects to be used in-app or in files.
+Description: Creates flextables for BRFSS objects to be used in-app or in files.
 License: MIT
 Imports:
     R6,

@@ -10,7 +10,7 @@ FT_StatPropsMgr <- R6Class(
     exclude_pvt = "^$",
     responses_pvt = ".*",
     rename_pvt = c(percent = "pct"),
-    widths_pvt = c(subset = 2, ci = 1),
+    widths_pvt = c(subset = 2, ci = 2),
     aligns_pvt = c(ci_pvt = "center"),
     subset_placement_pvt = "left",
     denom_sep_pvt = flextable::fp_border_default(),
@@ -24,13 +24,14 @@ FT_StatPropsMgr <- R6Class(
     titles_pvt = NULL,
     title_max_char_pvt = 9999,
     highlights_pvt = NULL,
+    highlights_mgr_pvt = NULL,
     footers_pvt = NULL,
     footnotes_pvt = TRUE,
 
     borders_pvt = ft_borders_list(),
 
     bgs_pvt = list(),
-    bgs_mgr_pvt = list(),
+    bgs_mgr_pvt = NULL,
 
     fonts_pvt = list(),
     fonts_mgr_pvt = NULL,
@@ -68,12 +69,14 @@ FT_StatPropsMgr <- R6Class(
         responses = ft_borders(left = solid_brdr,
                                right = solid_brdr,
                                midv = dotted_brdr),
-        stats = ft_borders( bottom = solid_brdr),
+        stats = ft_all_borders(solid_brdr),
         subvars = ft_borders(top = solid_brdr),
         subsets = ft_borders(top = solid_brdr,
                              left = solid_brdr,
                              right = solid_brdr,
-                             midh = dotted_brdr))
+                             midh = dotted_brdr),
+        data = ft_outside_borders(solid_brdr)
+      )
 
     },
 
@@ -119,15 +122,16 @@ FT_StatPropsMgr <- R6Class(
       private$borders_pvt[[nm]] <- brdrs
     },
 
-    add_widths = function(value) {
+    add_widths = function(...) {
 
-      if(missing(value)) return(NULL)
+      args <- list(...)
 
-      if(class(value) != "numeric" || length(names(value)) == 0) return(NULL)
+      purrr::imap(args, \(val, nm) {
 
-      private$widths_pvt <- c(private$widths_pvt, value)
+        private$widths_pvt[[nm]] <<- val
+      })
 
-
+      return()
     },
 
     add_highlight = function(value) {
@@ -216,6 +220,16 @@ FT_StatPropsMgr <- R6Class(
       private$paddings_pvt <- value
     },
 
+    widths = function(value) {
+
+      if(!missing(value)) {
+        message("this property is read-only")
+        return
+      }
+
+      private$widths_pvt
+    },
+
     borders = function(value) {
 
       if(missing(value)) return(private$borders_pvt)
@@ -256,7 +270,8 @@ FT_StatPropsMgr <- R6Class(
 
       if(missing(value)) return(private$box_pvt)
 
-      if(class(value) != "ft_box") return(NULL)
+      browser()
+      if(!is.null(value) && class(value) != "ft_box") return(NULL)
 
       private$box_pvt <- value
     },
@@ -308,6 +323,19 @@ FT_StatPropsMgr <- R6Class(
       private$aligns_pvt <- value
     },
 
+    highlights_mgr = function(value) {
+
+      if(missing(value)) return(private$highlights_mgr_pvt)
+
+      if (!inherits(value, "FT_HighlightsMgr")) {
+
+        return(NULL)
+
+      }
+
+      private$highlights_mgr_pvt <- value
+    },
+
     highlights = function(value) {
 
       if(missing(value)) return(private$highlights_pvt)
@@ -321,15 +349,6 @@ FT_StatPropsMgr <- R6Class(
       }
 
       private$highlights_pvt <- value
-    },
-
-    widths = function(value) {
-
-      if(missing(value)) return(private$widths_pvt)
-
-      if(class(value) != "numeric" || length(names(value)) == 0) return(NULL)
-
-      private$widths_pvt <- value
     },
 
     subset_placement = function(value) {

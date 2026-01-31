@@ -151,7 +151,6 @@ ft_add_data <- function(ft, df) {
   ncols <- ncol(df)
 
   last_sub <- ""
-  num_cols <- grep("num^", colnames(df))
 
   df <- df %>% mutate(across(starts_with("num"), as.integer))
 
@@ -201,12 +200,13 @@ ft_add_data <- function(ft, df) {
     last_sub <<- subv
   })
 
-  rspans <- ft$body$spans$rows[,-1]
+  if(!is.null(dim(ft$body$spans$rows))) {
+    rspans <- ft$body$spans$rows[,-1, drop = FALSE]
 
-  ft <- ft %>% delete_columns(j=1)
+    ft <- ft %>% delete_columns(j=1)
 
-  ft$body$spans$rows <- rspans
-
+    ft$body$spans$rows <- rspans
+  }
   ft
 
 

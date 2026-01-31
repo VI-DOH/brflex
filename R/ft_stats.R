@@ -46,6 +46,7 @@ ft_stats <- function(df_stats, ...,
                      titles = NULL,
                      title_max_char = 9999,
                      highlights = NULL,
+                     highlights_mgr = NULL,
                      footers = NULL,
                      footnotes = TRUE,
                      borders = list(),
@@ -60,6 +61,7 @@ ft_stats <- function(df_stats, ...,
 
 
   #  ==== if the stats table is NULL or empty, return NULL
+
 
   if(any(c("brfss_data", "brfss_prepped") %in% class(df_stats))) {
     if(missing(..1)) {
@@ -78,8 +80,8 @@ ft_stats <- function(df_stats, ...,
   }
 
   df_stats <- df_stats %>%
-    filter(!grepl(exclude, subset)) #%>%
-    #filter(grepl(responses, response))
+    filter(!grepl(exclude, subset)) %>%
+    filter(grepl(responses, response))
 
   if(nrow(df_stats) == 0) {
 
@@ -149,7 +151,7 @@ ft_stats <- function(df_stats, ...,
   cnames <- df_stats_rpt %>% colnames()
   nstats <- length(stats)
 
-  static_cols <- cnames %>% {.[!. %in% c(stats, "response")]}
+  static_cols <- cnames %>% {.[!. %in% c(stats, "response", "suppress")]}
 
   nstatic <- length(static_cols)
 
@@ -167,11 +169,17 @@ ft_stats <- function(df_stats, ...,
     unique()
   else subvars  <-  character(0)
 
+
   df_tbl <- df_stats_rpt %>%
     tidyr::pivot_wider(names_from = response,
-                       values_from = all_of(stats),
+                       values_from = c(all_of(stats), "suppress"),
                        names_sep = sep_char) %>%
-    as.data.frame() %>%
+    as.data.frame()
+
+  df_suppress <- df_tbl %>%
+    select(subvar, subset, starts_with("suppress"))
+
+  df_tbl <- df_tbl %>%
     select(all_of(fin_cols))
 
   if(has_subvar) {
@@ -247,6 +255,7 @@ ft_stats <- function(df_stats, ...,
   # ====================================================================
   #  === create the table, remove the header ... we will create it, and
   #  ============       set any table defaults    ===========
+
 
   ft <- df_tbl %>% flextable()
 
@@ -330,6 +339,7 @@ ft_stats <- function(df_stats, ...,
 
   # =========  do the fonts  ================
 
+
   if(!is.null(fonts_mgr)) {
     if(inherits(fonts_mgr, "FT_FontsMgr")) {
       ft <- ft %>% fonts_mgr$apply()
@@ -373,18 +383,6 @@ ft_stats <- function(df_stats, ...,
 
   ft <- ft %>% handle_aligns(aligns = aligns)
 
-  #
-  # invisible(
-  #   mapply(function(col, align) {
-  #
-  #     cols <- which(hdr_2_stats == col)
-  #
-  #     if(length(cols)>0) {
-  #       ft <<- ft %>%
-  #         flextable::align(j = cols, align = align)
-  #     }
-  #   }, names(align), align)
-  # )
 
   #  ===========   handle column padding    ===============
 
@@ -399,14 +397,30 @@ ft_stats <- function(df_stats, ...,
     }, names(col_padding), col_padding)
   )
 
-
-  # ============  merge the "All Respondents" (row 1, where there is no subvar)
-  # ========         with the first column if there is one
-
   #  ======  if there are highlight_rows   ====================
 
   if(!is.null(highlights)) ft <- ft %>% ft_add_highlights(highlights)
 
+  if(!is.null(highlights_mgr)) ft <- ft %>% highlights_mgr$apply()
+
+  df_suppress <- df_suppress %>%
+    rowwise() %>%
+    mutate(
+      suppress = any(c_across(where(is.logical)))
+    ) %>%
+    ungroup() %>%
+    filter(suppress)
+
+  sup_rows <- ft$body$data %>%
+    left_join(df_suppress, by = join_by(subvar, subset)) %>%
+    pull(suppress) %>%
+    which()
+
+  if(length(sup_rows) > 0) {
+    ft <- ft %>%
+      flextable::color(i = sup_rows, j = 2:length(ft$col_keys),
+                                  color = "#aaaaaa", part = "body")
+  }
 
   #  ======  do the grid around the data if required
 
