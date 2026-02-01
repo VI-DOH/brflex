@@ -13,27 +13,22 @@ FT_StatPropsMgr <- R6Class(
     widths_pvt = c(subset = 2, ci = 2),
     aligns_pvt = c(ci_pvt = "center"),
     subset_placement_pvt = "left",
-    denom_sep_pvt = flextable::fp_border_default(),
-    data_sep_pvt = flextable::fp_border_default(),
-    response_sep_pvt = flextable::fp_border_default(),
-    stats_sep_pvt = flextable::fp_border_default(),
+    # denom_sep_pvt = flextable::fp_border_default(),
+    # data_sep_pvt = flextable::fp_border_default(),
+    # response_sep_pvt = flextable::fp_border_default(),
+    # stats_sep_pvt = flextable::fp_border_default(),
     line_spacing_pvt = 1.0,
     title_spacing_pvt = 1.0,
 
     header_pvt = NULL,
     titles_pvt = NULL,
     title_max_char_pvt = 9999,
-    highlights_pvt = NULL,
-    highlights_mgr_pvt = NULL,
     footers_pvt = NULL,
     footnotes_pvt = TRUE,
 
-    borders_pvt = ft_borders_list(),
-
-    bgs_pvt = list(),
+    highlights_mgr_pvt = NULL,
+    borders_mgr_pvt = NULL,
     bgs_mgr_pvt = NULL,
-
-    fonts_pvt = list(),
     fonts_mgr_pvt = NULL,
 
     paddings_pvt = list(),
@@ -193,6 +188,17 @@ FT_StatPropsMgr <- R6Class(
       private$bgs_mgr_pvt <- value
     },
 
+    borders_mgr = function(value) {
+
+      if(missing(value)) return(private$borders_mgr_pvt)
+
+      if(!inherits(value, "FT_BordersMgr") && !is.null(value)) {
+        message("bgs_mgr must be class <FT_BordersMgr>")
+        return()
+      }
+      private$borders_mgr_pvt <- value
+    },
+
     fonts = function(value) {
 
       if(missing(value)) return(private$fonts_pvt)
@@ -234,7 +240,10 @@ FT_StatPropsMgr <- R6Class(
 
       if(missing(value)) return(private$borders_pvt)
 
-      if(class(value) != "ft_borders_list") return(NULL)
+      if(!is.null(value)) {
+        if(!(is.list(value) && length(value) == 0)) {
+          if(!inherits(value, "ft_borders_list")) return(NULL)
+        }}
 
       private$borders_pvt <- value
     },

@@ -50,6 +50,7 @@ ft_stats <- function(df_stats, ...,
                      footers = NULL,
                      footnotes = TRUE,
                      borders = list(),
+                     borders_mgr = NULL,
                      bgs = list(),
                      bgs_mgr = NULL,
                      fonts = list(),
@@ -367,7 +368,18 @@ ft_stats <- function(df_stats, ...,
 
   # =========  do the borders  ================
 
-  ft <- ft %>% handle_borders(borders = borders)
+  if(!is.null(borders_mgr)) {
+    if(inherits(borders_mgr, "FT_BordersMgr")) {
+      ft <- ft %>% borders_mgr$apply()
+    } else {
+      browser()
+      message("Invalid borders_mgr ... does not inherit class <FT_BordersMgr>")
+    }
+  } else {
+
+    ft <- ft %>% handle_borders(borders = borders)
+
+  }
 
   # ======= handle line spacing for body  ===========
 

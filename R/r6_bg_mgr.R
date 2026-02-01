@@ -169,13 +169,13 @@ FT_BGsMgr <-
         #self$apply_titles(ft)
 
 
-        ft <- ft %>%
-          self$apply_area("titles", i = 1:nrow_titles, part = "header") %>%
-          self$apply_area("responses", i = nrow_header - 1, part = "header") %>%
-          self$apply_area("stats", i = nrow_header, part = "header")  %>%
-          self$apply_area("data", part = "body")%>%
-          self$apply_area("footnotes",  part = "footer") %>%
-          self$apply_area("subvars", i = irows_subvars, j = jcols_subvars, part = "body")
+        ft <- ft %>% self$apply_area("table")
+          ft <- ft %>%self$apply_area("titles", i = 1:nrow_titles, part = "header")
+          ft <- ft %>%self$apply_area("responses", i = nrow_header - 1, part = "header")
+          ft <- ft %>%self$apply_area("stats", i = nrow_header, part = "header")
+          ft <- ft %>%self$apply_area("data", part = "body")
+          ft <- ft %>%self$apply_area("footnotes",  part = "footer")
+          ft <- ft %>%self$apply_area("subvars", i = irows_subvars, j = jcols_subvars, part = "body")
 
         if(irows_subsets[1] > 0) ft <- ft %>%
           self$apply_area("subsets", i = irows_subsets, j = jcols_subsets, part = "body")
@@ -190,27 +190,51 @@ FT_BGsMgr <-
 
         if(is.null(bgs)) return(ft)
 
-        if(is.null(i)) i <- 1:(ft[[part]]$content$nrow)
+        use_rc <- TRUE
 
-        nrow <- length(i)
+        if(use_rc) {
 
-        nbgs <- self$n_bgs(area)
+          f <- paste0(area, "_rc")
+          rc <- do.call(f, args = list(ft))
 
-        if(nrow != nbgs) {
-          ibgs <- rep(1,nrow)
+          if(!is.list(rc[[1]])) rc <- list(rc)
+
+          purrr::walk(rc, \(rc0) {
+
+            rows <- rc0$rows
+            cols <- rc0$cols
+            part <- rc0$part
+
+            bg  <-  bgs[[1]]$color
+
+            ft <<- self$apply_bg(ft, i = rows, j = cols,
+                                 bg = bg, part = part)
+          })
+
+
         } else {
-          ibgs <- 1:nrow
+          if(is.null(i)) i <- 1:(ft[[part]]$content$nrow)
+
+          nrow <- length(i)
+
+          nbgs <- self$n_bgs(area)
+
+          if(nrow != nbgs) {
+            ibgs <- rep(1,nrow)
+          } else {
+            ibgs <- 1:nrow
+          }
+
+          purrr::walk2(i, ibgs,\(irow, ibg) {
+            #if(area == "responses") browser()
+
+            bg  <-  bgs[[ibg]]$color
+
+            ft <<- self$apply_bg(ft, i = irow, j = j,
+                                 bg = bg, part = part)
+          })
+
         }
-
-
-        purrr::walk2(i, ibgs,\(irow, ibg) {
-          #if(area == "responses") browser()
-
-          bg  <-  bgs[[ibg]]$color
-
-          ft <<- self$apply_bg(ft, i = irow, j = j,
-                               bg = bg, part = part)
-        })
         ft
       },
 
@@ -297,6 +321,24 @@ FT_BGsMgr <-
       }
     )
   )
+
+
+#' @export
+FT_DefaultBGsMgr <-
+  R6::R6Class(
+    classname = "FT_DefaultBGsMgr",
+    inherit = FT_BGsMgr,
+
+    public = list(
+
+      initialize = function() {
+
+        super$initialize(stats = "grey88", subvars = "grey88")
+      }
+    )
+
+  )
+
 
 
 #' @export

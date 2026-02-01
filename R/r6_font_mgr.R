@@ -376,6 +376,33 @@ FT_FontsMgr <-
   )
 
 #' @export
+FT_DefaultFontsMgr <-
+  R6::R6Class(
+    classname = "FT_DefaultFontsMgr",
+    inherit = FT_FontsMgr,
+
+    public = list(
+
+      initialize = function(font = "Arial") {
+
+        super$add_font(FT_Font$new(font = font, color = "grey22", font.size = 12), "table")
+
+        super$add_font(FT_Font$new(font = font, color = "grey22", font.size = 13,
+                                   bold = TRUE), "titles")
+
+        super$add_font(FT_Font$new(font = font, color = "grey22", font.size = 12), "data")
+
+        super$merge_fonts()
+
+      }
+    )
+  )
+
+
+
+
+
+#' @export
 FT_Font <-
   R6::R6Class(
     classname = "FT_Font",

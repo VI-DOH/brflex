@@ -1,8 +1,8 @@
 library(R6)
 
 #' @export
-FT_StandardStatPropsMgr <- R6Class(
-  classname = "FT_StandardStatPropsMgr",
+FT_DefaultStatPropsMgr <- R6Class(
+  classname = "FT_DefaultStatPropsMgr",
   inherit = FT_StatPropsMgr,
 
   private = list(
@@ -13,22 +13,14 @@ FT_StandardStatPropsMgr <- R6Class(
 
     initialize = function() {
 
-      fnts_mgr <- FT_FontsMgr$new()
-      fnts_mgr$add_font(FT_Font$new(color = "grey22", font.size = 13, bold = TRUE), "titles")
-      fnts_mgr$add_font(FT_Font$new(color = "grey22", font.size = 12), "data")
-      fnts_mgr$merge_fonts()
-
-      bg_mgr <- FT_BGsMgr$new(stats = "grey88", subvars = "grey88")
-
-
       super$initialize(
 
         footnotes = TRUE,
         titles = c("{year} BRFSS", "{label}", "{coi}"),
         box = ft_box(),
-        bgs_mgr = bg_mgr,
-        fonts_mgr = fnts_mgr,
-
+        bgs_mgr = FT_DefaultBGsMgr$new(),
+        fonts_mgr = FT_DefaultFontsMgr$new(),
+        borders_mgr = FT_DefaultBordersMgr$new(),
         stats = c("den","num","percent"),
 
         aligns = c(ci = "center"),
@@ -39,7 +31,7 @@ FT_StandardStatPropsMgr <- R6Class(
 
       )
 
-      self$std_borders()
+ #     self$std_borders()
     }
   ),
 

@@ -1,4 +1,12 @@
 
+table_rc <- function(ft) {
+
+  list(rows = NULL,
+       cols = NULL,
+       part = "all"
+  )
+}
+
 header_rc <- function(ft) {
 
   list(rows = 1:ft$header$content$nrow,
@@ -7,19 +15,22 @@ header_rc <- function(ft) {
   )
 }
 
+footer_rc <- function(ft) {
+
+  list(rows = NULL,
+       cols = NULL,
+       part = "footer"
+  )
+}
+
 titles_rc <- function(ft) {
 
-  list(rows = titles_rows(),
+  list(rows = titles_rows(ft),
        cols = 1:length(ft$col_keys),
        part = "header"
   )
 }
 
-titles_rows <- function(ft) {
-
-  1:(ft$header$sections$nrow$titles)
-
-}
 
 responses_rc <- function(ft) {
 
@@ -30,6 +41,82 @@ responses_rc <- function(ft) {
   list(rows = responses_rows(ft),
        cols = cols,
        part = "header")
+
+}
+
+
+stats_rc <- function(ft) {
+
+  list(
+    rows = stats_rows(ft),
+    cols = 1:length(ft$body$col_keys),
+    part = "header"
+  )
+
+}
+
+
+subsets_rc <- function(ft) {
+
+  rows <- subvar_rows(ft)
+
+  rc <- purrr::map2(rows$min, rows$max,\(min, max) {
+    list(rows = min:max,
+         cols = 2 - (ft$properties$sub_placement == "top"),
+         part = "body")
+
+  })
+
+  rc
+}
+
+subvars_rc <- function(ft) {
+
+  rows <- subvar_rows(ft)
+
+  if(ft$properties$sub_placement == "top") {
+
+    rows <- rows %>% tail(-1)
+
+    rc <- purrr::map2(rows$min, rows$max,\(min, max) {
+      list(rows = min-1,
+           cols = 1:length(ft$col_keys),
+           part = "body")
+
+    })
+
+  } else {
+
+    rc <- purrr::map2(rows$min, rows$max,\(min, max) {
+      list(rows = min:max,
+           cols = 1,
+           part = "body")
+
+    })
+  }
+
+
+  rc
+}
+
+
+data_rc <- function(ft) {
+
+  rows <- subvar_rows(ft)
+
+  rc <- purrr::map2(rows$min, rows$max,\(min, max) {
+    list(rows = min:max,
+         cols = (3 - (ft$properties$sub_placement == "top")):length(ft$col_keys),
+         part = "body")
+
+  })
+
+  rc
+}
+
+titles_rows <- function(ft) {
+
+  1:(ft$header$sections$nrow$titles)
 
 }
 
@@ -46,32 +133,11 @@ titles_rows <- function(ft) {
 
 }
 
-stats_rc <- function(ft) {
-
-  list(
-    rows = stats_rows(ft),
-    cols = 1:length(ft$body$col_keys),
-    part = "header"
-  )
-
-}
 
 stats_rows <- function(ft) {
 
   irow <- ft$header$sections$nrow$titles + ft$header$sections$nrow$responses + 1
   irow:(irow + ft$header$sections$nrow$stats - 1)
-
-}
-
-subvar_rc <- function(ft) {
-  rows <- subvar_rows(ft)
-
-  rows <- purrr::map2(rows$min, rows$max,\(min, max) min:max) %>% unlist()
-
-  list(
-    rows = rows,
-    cols = 2 - (ft$properties$sub_placement == "top")
-  )
 
 }
 

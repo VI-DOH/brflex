@@ -97,6 +97,7 @@ FT_StatsMgr <- R6Class(
                footnotes = props_mgr$footnotes,
 
                borders = props_mgr$borders,
+               borders_mgr = props_mgr$borders_mgr,
 
                bgs = props_mgr$bgs,
                bgs_mgr = props_mgr$bgs_mgr,
