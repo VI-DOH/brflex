@@ -5,8 +5,8 @@ FT_StatsMgr <- R6Class(
   classname = "FT_StatsMgr",
 
   private = list(
-    stats_mgr = NULL,
-    props_mgr = NULL,
+    stats_mgr_pvt = NULL,
+    props_mgr_pvt = NULL,
     multi_yr = FALSE,
     years = NULL,
     use_first_factor = FALSE,
@@ -44,13 +44,13 @@ FT_StatsMgr <- R6Class(
       if(!is.null(props_mgr) ) {
 
         if("FT_StatPropsMgr" %in% class(props_mgr)) {
-          private$props_mgr <- props_mgr
+          private$props_mgr_pvt <- props_mgr
         }
       }
       if(!is.null(stats_mgr) ) {
 
         if("StatsMgr" %in% class(stats_mgr)) {
-          private$stats_mgr <- stats_mgr
+          private$stats_mgr_pvt <- stats_mgr
         }
       }
     },
@@ -59,14 +59,14 @@ FT_StatsMgr <- R6Class(
 
       if(is.null(suppress)) suppress <- private$suppress_pvt
 
-      df_stats <- private$stats_mgr$survey_stats(coi = coi, reduce = FALSE)
+      df_stats <- private$stats_mgr_pvt$survey_stats(coi = coi, reduce = FALSE)
 
-      props_mgr <- private$props_mgr
+      props_mgr <- private$props_mgr_pvt
 
       if(private$use_first_factor) {
 
-        resp <- stats_mgr$survey_stats() %>% pull(response) %>% {.[1]}
-        private$props_mgr$responses <- paste0("^", resp, "$")
+        resp <- stats_mgr_pvt$survey_stats() %>% pull(response) %>% {.[1]}
+        private$props_mgr_pvt$responses <- paste0("^", resp, "$")
 
       }
 
@@ -117,16 +117,16 @@ FT_StatsMgr <- R6Class(
   #   ft_multi_year = function(cois = NULL, years = NULL) {
   #
   #     {
-  #       df_stats <- private$stats_mgr$multi_year_stats(cois, years)
+  #       df_stats <- private$stats_mgr_pvt$multi_year_stats(cois, years)
   #
-  #       df_stats <- private$stats_mgr$survey_stats(coi = coi, reduce = FALSE)
+  #       df_stats <- private$stats_mgr_pvt$survey_stats(coi = coi, reduce = FALSE)
   #     }
   #
   #     props_mgr <- private$props_mgr
   #
   #     if(private$use_first_factor) {
   #
-  #       resp <- stats_mgr$survey_stats() %>% pull(response) %>% {.[1]}
+  #       resp <- stats_mgr_pvt$survey_stats() %>% pull(response) %>% {.[1]}
   #       private$props_mgr$responses <- paste0("^", resp, "$")
   #
   #     }
@@ -169,12 +169,43 @@ FT_StatsMgr <- R6Class(
 
   active = list(
 
+    year = function(value) {
+
+      if(missing(value)) {
+        return(self$stats_mgr$data_mgr$dataset_mgr$get(year))
+      } else {
+        if(is.numeric(value)) {
+          self$stats_mgr$data_mgr$dataset_mgr$set(year = value)
+        }
+      }
+    },
+
     data = function(value) {
 
       if(missing(value)) return(private$df_stats)
 
       if("brfss_stats" %in% class(value)) {
         private$df_stats <- value
+      }
+
+    },
+
+    stats_mgr  = function(value) {
+
+      if(missing(value)) return(private$stats_mgr_pvt)
+
+      if(inherits(value, "StatsMgr")) {
+        private$stats_mgr_pvt <- value
+      }
+
+    },
+
+    props_mgr   = function(value) {
+
+      if(missing(value)) return(private$props_mgr_pvt)
+
+      if(inherits(value, "FT_StatPropsMgr")) {
+        private$props_mgr_pvt <- value
       }
 
     },
@@ -207,3 +238,25 @@ FT_StatsMgr <- R6Class(
     }
   )
 )
+
+
+#' @export
+FT_DefaultStatsMgr <- R6Class(
+  classname = "FT_DefaultStatsMgr",
+  inherit = FT_StatsMgr,
+
+  public = list(
+
+    initialize = function() {
+
+      stats_mgr <- brfss::StatsMgr$new()
+      super$initialize(props_mgr = FT_DefaultStatPropsMgr$new(),
+                       stats_mgr = stats_mgr)
+
+      stats_mgr$subsets <- c("Sex", "Race")
+
+    }
+  )
+
+)
+

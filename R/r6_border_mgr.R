@@ -21,17 +21,13 @@ FT_BordersMgr <-
 
       set_active = function(value, area) {
 
-        if(inherits(value, "FT_RangeBorders")) {
-        } else if(inherits(value[[1]], "FT_RangeBorders")) {
+        if(!(is.null(value) || inherits(value, "FT_RangeBorders"))) {
 
-          value <-value[[1]]
-
-        } else  {
           message("value must be an FT_RangeBorders object")
           return(NULL)
         }
 
-        private$borders[[paste0(area, "_pvt")]] <- list(value)
+        private$borders[[paste0(area, "_pvt")]] <- value
 
       }
 
@@ -56,14 +52,12 @@ FT_BordersMgr <-
 
         purrr::walk(args, \(arg) {
 
-
           value <- get(arg)
 
-          if(inherits(value, "FT_RangeBorders")) {
-            value <- list(value)
-          } else {
+          if(!inherits(value, "FT_RangeBorders")) {
             value <- NULL
           }
+
           private$borders[[paste0(arg, "_pvt")]] <- value
 
         })
@@ -83,8 +77,7 @@ FT_BordersMgr <-
 
         df <- purrr::map(nms, \(nm){
 
-
-          brdr <- private$borders[[nm]][[1]]
+          brdr <- private$borders[[nm]]
 
           if(!is.null(brdr)) {
 
@@ -106,15 +99,22 @@ FT_BordersMgr <-
 
       print = function() {
 
-
         print(self$as.data.frame(),  row.names = F)
-
 
       },
 
       n_borders = function(area) {
 
         length(private$borders[[paste0(area, "_pvt")]])
+      },
+
+      box = function(color = NULL) {
+
+        if(is.null(color)) color <- FT_DefaultBordersMgr$color
+        brdrs <- FT_RangeBordersBox$new(color)
+
+        private$borders$table_pvt <- brdrs
+
       },
 
       add_border = function(border, area) {
@@ -126,27 +126,45 @@ FT_BordersMgr <-
         }
 
         n <- self$n_borders(area)
-        if(n == 0) private$borders[[paste0(area, "_pvt")]] <- list()
+        if(n == 0) private$borders[[paste0(area, "_pvt")]] <- NULL
 
-        private$borders[[paste0(area, "_pvt")]][[n + 1]] <- border
+        private$borders[[paste0(area, "_pvt")]] <- border
       },
 
       apply = function(ft) {
 
+        priv_list <- as.list(private$borders)
 
-        nms <- self$areas
+        keep <- !purrr::map_lgl(priv_list, is.null) %>% unname()
+        priv_list <- priv_list[keep]
+
+        nms <- names(priv_list) %>% gsub("_pvt", "", .)
+
+        nms <- c(nms[!nms %in% "table"], nms[nms %in% "table"])
 
         purrr::walk(nms, \(nm) {
 
- #         cat("trying ", nm, " ...\n")
           if(!is.null(self[[nm]])) {
-            brdr_rng <- self[[nm]][[1]]
+            brdr_rng <- self[[nm]]
 
-   #         cat("  ok ", nm, " is not NULL\n")
             f <- paste0(nm, "_rc")
             rc <- do.call(f, args = list(ft))
 
-            ft <<- brdr_rng$apply(ft = ft, rc = rc)
+            if(nm == "table") {
+
+              purrr::walk(rc, \(rc0) {
+
+                br0 <- brdr_rng$clone()
+
+                if(rc0$part %in% c("header", "body")) br0$bottom <- NULL
+                if(rc0$part %in% c("footer", "body")) br0$top <- NULL
+                ft <<- br0$apply(ft = ft, rc = rc0)
+              })
+
+            } else {
+
+              ft <<- brdr_rng$apply(ft = ft, rc = rc)
+            }
           }
 
         })
@@ -305,19 +323,6 @@ FT_RangeBorders <-
         priv_list <-as.list(private)
         priv_list <- priv_list[!purrr::map_lgl(priv_list, is.null)]
 
-        # df <- list(
-        #   priv_list$midv$as.data.frame(),
-        #   priv_list$midh$as.data.frame(),
-        #   priv_list$top$as.data.frame(),
-        #   priv_list$bottom$as.data.frame(),
-        #   priv_list$left$as.data.frame(),
-        #   priv_list$right$as.data.frame()
-        # )
-        #
-        # df <- df %>% bind_rows()%>%
-        #   mutate(what = gsub("_pvt","",names(priv_list))) %>%
-        #   relocate(what)
-
         df <- purrr::imap(priv_list, \(value, nm){
           if(!is.null(value)) {
             cat(nm, "\n")
@@ -351,7 +356,8 @@ FT_RangeBorders <-
             cols <- rc0$cols
             part <- rc0$part
 
-            irow <-  rows[1]
+            if(is.null(rows)) irow <- 1 else irow <-  rows[1]
+
             if(irow == 1) {
               ft <<- ft %>% flextable::hline_top( j = cols, border = brdr, part = part)
             } else {
@@ -499,13 +505,14 @@ FT_RangeBorders <-
 
       apply = function(ft, rc) {
 
-        ft <- ft %>%
-          self$do_top(rc) %>%
-          self$do_bottom(rc) %>%
-          self$do_right(rc) %>%
-          self$do_left(rc) %>%
-          self$do_midv(rc) %>%
-          self$do_midh(rc)
+        if(length(rc) > 0) {
+          ft <-  self$do_top(ft, rc)
+          ft <- self$do_bottom(ft, rc)
+          ft <- self$do_right(ft, rc)
+          ft <- self$do_left(ft, rc)
+          ft <- self$do_midv(ft, rc)
+          ft <-  self$do_midh(ft, rc)
+        }
 
         ft
       }
@@ -520,7 +527,7 @@ FT_RangeBorders <-
       top = function(value) {
         if(missing(value)) return(private$top_pvt)
 
-        if(inherits(value, "FT_Border")) {
+        if(is.null(value) || inherits(value, "FT_Border")) {
           private$top_pvt <- value
         }
       },
@@ -528,7 +535,7 @@ FT_RangeBorders <-
       bottom = function(value) {
         if(missing(value)) return(private$bottom_pvt)
 
-        if(inherits(value, "FT_Border")) {
+        if(is.null(value) || inherits(value, "FT_Border")) {
           private$bottom_pvt <- value
         }
       },
@@ -536,7 +543,7 @@ FT_RangeBorders <-
       left = function(value) {
         if(missing(value)) return(private$left_pvt)
 
-        if(inherits(value, "FT_Border")) {
+        if(is.null(value) || inherits(value, "FT_Border")) {
           private$left_pvt <- value
         }
       },
@@ -544,7 +551,7 @@ FT_RangeBorders <-
       right = function(value) {
         if(missing(value)) return(private$right_pvt)
 
-        if(inherits(value, "FT_Border")) {
+        if(is.null(value) || inherits(value, "FT_Border")) {
           private$right_pvt <- value
         }
       },
@@ -552,7 +559,7 @@ FT_RangeBorders <-
       midv = function(value) {
         if(missing(value)) return(private$midv_pvt)
 
-        if(inherits(value, "FT_Border")) {
+        if(is.null(value) || inherits(value, "FT_Border")) {
           private$midv_pvt <- value
         }
       },
@@ -560,7 +567,7 @@ FT_RangeBorders <-
       midh = function(value) {
         if(missing(value)) return(private$midh_pvt)
 
-        if(inherits(value, "FT_Border")) {
+        if(is.null(value) || inherits(value, "FT_Border")) {
           private$midh_pvt <- value
         }
       }
@@ -568,6 +575,27 @@ FT_RangeBorders <-
 
   )
 
+#' @export
+FT_RangeBordersBox <-
+  R6::R6Class(
+    classname = "FT_RangeBordersBox",
+    inherit =  FT_RangeBorders,
+
+    public = list(
+
+      initialize = function(color = NULL) {
+
+        brdr_solid <- FT_BorderSolid$new(color = color)
+
+        super$initialize(top = brdr_solid, bottom = brdr_solid,
+                         left = brdr_solid,right = brdr_solid,
+                         midv = NULL, midh = NULL)
+      }
+
+    )
+
+
+  )
 
 #' @export
 FT_Border <-
@@ -672,6 +700,24 @@ FT_Border <-
   )
 
 #' @export
+FT_BorderSolid <-
+  R6::R6Class(
+    classname = "FT_BorderSolid",
+    inherit = FT_Border,
+
+    public = list(
+
+      initialize = function(color = NULL) {
+
+        if(is.null(color)) color <- FT_DefaultBordersMgr$color
+        super$initialize(color = color, style = "solid", width = 1)
+      }
+    )
+
+  )
+
+
+#' @export
 FT_DefaultBordersMgr <-
   R6::R6Class(
     classname = "FT_DefaultBordersMgr",
@@ -679,30 +725,29 @@ FT_DefaultBordersMgr <-
 
     public = list(
 
-      initialize = function() {
+      initialize = function(box = FALSE) {
 
-        brdr_solid <- FT_Border$new(color = "grey33", style = "solid", width = 2)
-        brdr_dashed <- FT_Border$new(color = "grey33", style = "dashed", width = 1)
-        brdr_dotted <- FT_Border$new(color = "grey33", style = "dotted", width = 1)
-        brdr_double <- FT_Border$new(color = "grey33", style = "double", width = 1)
+        color <- FT_DefaultBordersMgr$color
+
+        brdr_solid <- FT_Border$new(color = color, style = "solid", width = 1)
+        brdr_dashed <- FT_Border$new(color = color, style = "dashed", width = 1)
+        brdr_dotted <- FT_Border$new(color = color, style = "dotted", width = 1)
+        brdr_double <- FT_Border$new(color = color, style = "double", width = 1)
 
         brdrs_solid_box_dotted_int <-
           FT_RangeBorders$new(top = brdr_solid, bottom = brdr_solid,
                               left = brdr_solid,right = brdr_solid,
                               midv = brdr_solid, midh = brdr_dotted)
 
-        brdrs_solid_box_no_int <-
-          FT_RangeBorders$new(top = brdr_solid, bottom = brdr_solid,
-                              left = brdr_solid,right = brdr_solid,
-                              midv = NULL, midh = NULL)
 
         brdrs_solid_box_solid_int <-
           FT_RangeBorders$new(top = brdr_solid, bottom = brdr_solid,
                               left = brdr_solid, right = brdr_solid,
                               midv = brdr_solid, midh = brdr_solid)
 
+        if(box) super$table <- FT_RangeBordersBox$new(color) else super$table <- NULL
 
-        super$titles <- brdrs_solid_box_no_int
+        super$titles <- NULL
         super$responses <- brdrs_solid_box_solid_int
         super$stats <- brdrs_solid_box_solid_int
         super$data <- brdrs_solid_box_dotted_int
@@ -712,3 +757,7 @@ FT_DefaultBordersMgr <-
       }
     )
   )
+
+#' @export
+FT_DefaultBordersMgr$color <- "grey33"
+

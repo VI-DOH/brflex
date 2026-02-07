@@ -13,10 +13,7 @@ FT_StatPropsMgr <- R6Class(
     widths_pvt = c(subset = 2, ci = 2),
     aligns_pvt = c(ci_pvt = "center"),
     subset_placement_pvt = "left",
-    # denom_sep_pvt = flextable::fp_border_default(),
-    # data_sep_pvt = flextable::fp_border_default(),
-    # response_sep_pvt = flextable::fp_border_default(),
-    # stats_sep_pvt = flextable::fp_border_default(),
+
     line_spacing_pvt = 1.0,
     title_spacing_pvt = 1.0,
 
@@ -382,3 +379,46 @@ FT_StatPropsMgr <- R6Class(
 
   )
 )
+
+#' @export
+FT_DefaultStatPropsMgr <- R6Class(
+  classname = "FT_DefaultStatPropsMgr",
+  inherit = FT_StatPropsMgr,
+
+  private = list(
+
+  ),
+
+  public = list(
+
+    initialize = function() {
+
+      super$initialize(
+
+        footnotes = TRUE,
+        titles = c("{year} BRFSS", "{label}", "{coi}"),
+        box = NULL,
+        bgs_mgr = FT_DefaultBGsMgr$new(),
+        fonts_mgr = FT_DefaultFontsMgr$new(),
+        borders_mgr = FT_DefaultBordersMgr$new(),
+        stats = c("den","num","percent"),
+
+        aligns = c(ci = "center"),
+        exclude = "^Don|^AI",
+        widths = c(subset = 1.2, ci = 2),
+        subset_placement = "top",
+        paddings = ft_paddings_list(data = ft_padding(2,1,5,5))
+
+      )
+
+      #     self$std_borders()
+    }
+  ),
+
+  active = list(
+
+
+
+  )
+)
+

@@ -197,6 +197,8 @@ FT_BGsMgr <-
           f <- paste0(area, "_rc")
           rc <- do.call(f, args = list(ft))
 
+          if(length(rc) == 0) return(ft)
+
           if(!is.list(rc[[1]])) rc <- list(rc)
 
           purrr::walk(rc, \(rc0) {
