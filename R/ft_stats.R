@@ -63,7 +63,6 @@ ft_stats <- function(df_stats, ...,
 
   #  ==== if the stats table is NULL or empty, return NULL
 
-
   if(any(c("brfss_data", "brfss_prepped") %in% class(df_stats))) {
     if(missing(..1)) {
       return(NULL)
@@ -108,19 +107,21 @@ ft_stats <- function(df_stats, ...,
 
   coi <- attr(df_stats, "coi")
 
-  if(is.null(population) ) {
-    if("population" %in%  names(attributes(df_stats))) {
+  df_stats <- df_stats %>% set_population(population)
 
-      population <- attr(df_stats, "population")
-
-      df_stats <- df_stats %>%
-        mutate(subset = ifelse(subset == "All Respondents", population, subset))
-    }
-  } else {
-
-    df_stats <- df_stats %>%
-      mutate(subset = ifelse(subset == "All Respondents", population, subset))
-  }
+  # if(is.null(population) ) {
+  #   if("population" %in%  names(attributes(df_stats))) {
+  #
+  #     population <- attr(df_stats, "population")
+  #
+  #     df_stats <- df_stats %>%
+  #       mutate(subset = ifelse(subset == "All Respondents", population, subset))
+  #   }
+  # } else {
+  #
+  #   df_stats <- df_stats %>%
+  #     mutate(subset = ifelse(subset == "All Respondents", population, subset))
+  # }
 
   #  character for separating stats and vals
 
@@ -142,7 +143,12 @@ ft_stats <- function(df_stats, ...,
   vals <- df_stats_rpt %>% pull(response) %>% unique()
   nvals <- length(vals)
 
-  stats_in <- df_stats_rpt %>% select( where(is.numeric), matches("^ci$")) %>% colnames()
+  stats_in <- df_stats_rpt %>%
+    select(where(is.numeric), matches("^ci$")) %>%
+    colnames() %>%
+    {.[. != "year"]}
+
+
   stats_rm <- stats_in %>% {.[!. %in% stats]}
 
   df_stats_rpt <- df_stats_rpt %>% select(-all_of(stats_rm))
@@ -152,18 +158,11 @@ ft_stats <- function(df_stats, ...,
   cnames <- df_stats_rpt %>% colnames()
   nstats <- length(stats)
 
-  static_cols <- cnames %>% {.[!. %in% c(stats, "response", "suppress")]}
+  static_cols <- cnames %>% {.[!. %in% c(stats, "response", "suppress", "year")]}
 
   nstatic <- length(static_cols)
 
   has_subvar <- "subvar" %in% static_cols
-
-  fin_cols <- c(static_cols,
-                expand.grid(stats,vals) %>%
-                  mutate(col = paste0(Var1,sep_char,Var2)) %>%
-                  pull(col))
-
-  if(length(stats) == 1) fin_cols <- gsub(".*\\^","", fin_cols)
 
   if(has_subvar) subvars <- df_stats %>%
     pull(subvar) %>%
@@ -171,17 +170,14 @@ ft_stats <- function(df_stats, ...,
   else subvars  <-  character(0)
 
 
-  df_tbl <- df_stats_rpt %>%
-    tidyr::pivot_wider(names_from = response,
-                       values_from = c(all_of(stats), "suppress"),
-                       names_sep = sep_char) %>%
-    as.data.frame()
+  df_tbl <- widen(df_stats_rpt)
 
   df_suppress <- df_tbl %>%
     select(subvar, subset, starts_with("suppress"))
 
-  df_tbl <- df_tbl %>%
-    select(all_of(fin_cols))
+  df_tbl <- df_tbl %>% select(-starts_with("suppress"))
+
+  df_hdr_rows <- wide_header_rows(df_tbl)
 
   if(has_subvar) {
 
@@ -195,7 +191,6 @@ ft_stats <- function(df_stats, ...,
       mutate(across(where(is.numeric), ~if_else(is.na(.x), 0, .x))) %>%
       mutate(across(where(is.character), ~if_else(is.na(.x), "-", .x)))
   }
-  #subsets = subsets, subvar))
 
 
   val_hdr <- df_tbl %>% colnames() %>% grep(sep_char,., fixed = T, value = T) %>%
@@ -206,51 +201,6 @@ ft_stats <- function(df_stats, ...,
   denom_col <- static_cols %>% {. == "den"} %>% which()
 
   #  figure out merging for val header line
-  val_hdr <- c("",vals)
-  hdr_1_vals <- rep("", nstatic)
-
-
-  sapply(vals, function(val){
-    hdr_1_vals <<- c(hdr_1_vals, rep(val,nstats))
-  })
-
-
-  right_bords <- which(hdr_2_stats == stats[1]) - 1
-
-
-  # ====================================================================
-  # ==========   rename the headers if requested    ==============
-
-
-  rename <- as.list(rename)
-
-  invisible(
-    mapply(function(stat_in, stat_out) {
-      hdr_2_stats[hdr_2_stats == stat_in] <<- stat_out
-    }, names(rename), rename)
-  )
-
-
-  # ====================================================================
-  #  === calculate tops of each new subset for a border    ==============
-
-  if(has_subvar) {
-    top_bords <- df_tbl %>% select(subvar) %>% distinct() %>%
-
-      left_join(df_tbl %>%
-                  count(subvar),by = join_by(subvar)) %>%
-      mutate(x=cumsum(n)+1) %>%
-      mutate(start = x-n) %>%
-      pull(start)
-
-    bottom_bords <- (top_bords - 1) %>%   {.[.>0]}
-
-  } else bottom_bords<-NULL
-
-  stat_cols <- (nstatic + 1) : ncol(df_tbl)
-
-  # if(has_subvar) df_tbl <- df_tbl %>%
-  #   mutate(subvar = ifelse(subvar == "", subset, subvar))
 
   # ====================================================================
   # ====================================================================
@@ -265,15 +215,29 @@ ft_stats <- function(df_stats, ...,
   if(subset_placement == "top" ) {
 
     has_subvar <- FALSE
-    hdr_1_vals <- tail(hdr_1_vals,-1)
-    hdr_2_stats <- tail(hdr_2_stats,-1)
-    right_bords <- right_bords - 1
+
+    df_hdr_rows <- df_hdr_rows %>% select(-1)
 
     ft <- ft %>%
       delete_part(part = "body") %>%
       ft_add_data(df_tbl)
 
   }
+
+
+  hdr_2_stats<- as.character(df_hdr_rows %>% tail(1))
+  # ====================================================================
+  # ==========   rename the headers if requested    ==============
+
+
+  rename <- as.list(rename)
+
+  invisible(
+    mapply(function(stat_in, stat_out) {
+      hdr_2_stats[hdr_2_stats == stat_in] <<- stat_out
+    }, names(rename), rename)
+  )
+
 
   ## ====   set placement info for use later   ======
 
@@ -304,23 +268,36 @@ ft_stats <- function(df_stats, ...,
     }
   }
 
-  # ========  do the stats header and the responses header   =====
+  # ========  do the stats header and the responses header (and maybe year header)   =====
 
 
-  if(!is.null(responses)) {
+  hdr_lines <- purrr::map(1:nrow(df_hdr_rows), ~df_hdr_rows[.x,] %>% as.character())
 
+  stats_line <- hdr_lines %>% tail(1)
+  hdr_lines <- hdr_lines %>% head(-1)
+
+  nresponses <- df_stats %>% pull(response) %>% unique() %>% length()
+
+  if(nresponses == 1) {
+    hdr_lines <- head(hdr_lines,-1)
+    sections$nrow$responses <- 0
+  } else {
     sections$nrow$responses <- 1
-
-    ft <- ft %>%
-      ft_add_resp_hdr(values = hdr_1_vals)
   }
+
+  purrr::walk(hdr_lines,\(hdrs) {
+
+    ft <<- ft %>%
+      ft_add_resp_hdr(values = hdrs)
+  })
+
 
   if(!is.null(stats)) {
 
     sections$nrow$stats <- 1
 
     ft <- ft %>%
-      ft_add_stats_hdr(values = hdr_2_stats)
+      ft_add_stats_hdr(values = stats_line[[1]])
   }
 
   if(has_subvar) ft <- ft %>%
@@ -431,7 +408,7 @@ ft_stats <- function(df_stats, ...,
   if(length(sup_rows) > 0) {
     ft <- ft %>%
       flextable::color(i = sup_rows, j = 2:length(ft$col_keys),
-                                  color = "#aaaaaa", part = "body")
+                       color = "#aaaaaa", part = "body")
   }
 
   #  ======  do the grid around the data if required
@@ -463,3 +440,68 @@ ft_stats <- function(df_stats, ...,
 }
 
 
+widen <- function(df_stats) {
+
+  stats <- StatsMgr$stats_names()
+
+  stats <- c(stats, "suppress") %>%
+    paste0(., collapse = "$|^") %>%
+    paste0("^", ., "$")
+
+  if("year" %in% colnames(df_stats)) {
+    df_stats <- df_stats %>% relocate(year, .after = response)
+  }
+
+  df_wide <- df_stats %>%
+    tidyr::pivot_wider(names_from = c(matches("year|response")),
+                       id_cols = c(subvar, subset),
+                       values_from =  c(matches(stats)), names_vary = "slowest",
+                       names_sep = "^")
+
+  df_wide
+}
+
+wide_header_rows <- function(df_wide) {
+
+
+  df_cols <- data.frame(col = colnames(df_wide)) %>%
+    mutate(nrows = gsub("[^\\^]","", col)) %>%
+    mutate(nrows = nchar(nrows) + 1)
+
+  max_rows <- max(df_cols %>% pull(nrows))
+
+
+  df_header <- df_cols %>% purrr::pmap(\(col, nrows) {
+
+    n_missing <- max_rows - nrows
+
+    vals <- stringr::str_split_1(col, "\\^")
+
+    c(vals,rep("", n_missing))
+
+  })   %>% bind_cols(.name_repair = "universal_quiet") %>%
+    slice(n():1) %>%
+    as.data.frame()
+
+  df_header
+}
+
+set_population <- function(df_stats, population) {
+
+  if(is.null(population) ) {
+    if("population" %in%  names(attributes(df_stats))) {
+
+      population <- attr(df_stats, "population")
+
+      df_stats <- df_stats %>%
+        mutate(subset = ifelse(subset == "All Respondents", population, subset))
+    }
+  } else {
+
+    df_stats <- df_stats %>%
+      mutate(subset = ifelse(subset == "All Respondents", population, subset))
+  }
+
+  df_stats
+
+}

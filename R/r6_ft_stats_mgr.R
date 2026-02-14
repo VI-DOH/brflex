@@ -57,16 +57,17 @@ FT_StatsMgr <- R6Class(
 
     ft = function(coi = NULL, suppress = NULL) {
 
+      props_mgr <- private$props_mgr_pvt
+      stats_mgr <- private$stats_mgr_pvt
+
       if(is.null(suppress)) suppress <- private$suppress_pvt
 
-      df_stats <- private$stats_mgr_pvt$survey_stats(coi = coi, reduce = FALSE)
-
-      props_mgr <- private$props_mgr_pvt
+      df_stats <- stats_mgr$survey_stats(coi = coi, reduce = FALSE)
 
       if(private$use_first_factor) {
 
-        resp <- stats_mgr_pvt$survey_stats() %>% pull(response) %>% {.[1]}
-        private$props_mgr_pvt$responses <- paste0("^", resp, "$")
+        resp <- stats_mgr$survey_stats() %>% pull(response) %>% {.[1]}
+        props_mgr$responses <- paste0("^", resp, "$")
 
       }
 
@@ -79,7 +80,7 @@ FT_StatsMgr <- R6Class(
       ft_stats(df_stats = df_stats,
                coi = NULL,
                population = props_mgr$population,
-               stats = props_mgr$stats,
+               stats = stats_mgr$stats,
                exclude =  props_mgr$exclude,
                responses = props_mgr$responses,
                rename = c(percent = "pct"),

@@ -1,10 +1,15 @@
 
 table_rc <- function(ft) {
 
-  list(rows = NULL,
-       cols = NULL,
-       part = "all"
-  )
+  parts <- c("header", "body", "footer")
+
+  purrr::map(parts, \(part) {
+
+    list(rows = 1:nrow_part(ft, part),
+         cols =  1:length(ft$col_keys),
+         part = part
+    )
+  })
 }
 
 header_rc <- function(ft) {
@@ -17,8 +22,8 @@ header_rc <- function(ft) {
 
 footer_rc <- function(ft) {
 
-  list(rows = NULL,
-       cols = NULL,
+  list(rows = 1:nrow_part(ft, "footer"),
+       cols =  1:length(ft$col_keys),
        part = "footer"
   )
 }
