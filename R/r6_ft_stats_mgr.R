@@ -46,7 +46,12 @@ FT_StatsMgr <- R6Class(
         if("FT_StatPropsMgr" %in% class(props_mgr)) {
           private$props_mgr_pvt <- props_mgr
         }
+      } else {
+
+        private$props_mgr_pvt <-FT_DefaultStatPropsMgr$new()
+
       }
+
       if(!is.null(stats_mgr) ) {
 
         if("StatsMgr" %in% class(stats_mgr)) {
@@ -55,14 +60,16 @@ FT_StatsMgr <- R6Class(
       }
     },
 
-    ft = function(coi = NULL, suppress = NULL) {
+    ft = function(cois = NULL, suppress = NULL) {
 
       props_mgr <- private$props_mgr_pvt
       stats_mgr <- private$stats_mgr_pvt
 
       if(is.null(suppress)) suppress <- private$suppress_pvt
 
-      df_stats <- stats_mgr$survey_stats(coi = coi, reduce = FALSE)
+      df_stats <- stats_mgr$survey_stats(cois = cois, reduce = FALSE)
+
+      has_year <- "year" %in% colnames(df_stats)
 
       if(private$use_first_factor) {
 
@@ -83,7 +90,7 @@ FT_StatsMgr <- R6Class(
                stats = stats_mgr$stats,
                exclude =  props_mgr$exclude,
                responses = props_mgr$responses,
-               rename = c(percent = "pct"),
+               rename = props_mgr$renames,
                widths = props_mgr$widths,
                aligns = props_mgr$aligns,
                subset_placement = props_mgr$subset_placement,
@@ -97,13 +104,8 @@ FT_StatsMgr <- R6Class(
                footers = NULL,
                footnotes = props_mgr$footnotes,
 
-               borders = props_mgr$borders,
                borders_mgr = props_mgr$borders_mgr,
-
-               bgs = props_mgr$bgs,
                bgs_mgr = props_mgr$bgs_mgr,
-
-               fonts = props_mgr$fonts,
                fonts_mgr = props_mgr$fonts_mgr,
 
                paddings = props_mgr$paddings,
@@ -114,59 +116,6 @@ FT_StatsMgr <- R6Class(
     }
 
   ),
-
-  #   ft_multi_year = function(cois = NULL, years = NULL) {
-  #
-  #     {
-  #       df_stats <- private$stats_mgr_pvt$multi_year_stats(cois, years)
-  #
-  #       df_stats <- private$stats_mgr_pvt$survey_stats(coi = coi, reduce = FALSE)
-  #     }
-  #
-  #     props_mgr <- private$props_mgr
-  #
-  #     if(private$use_first_factor) {
-  #
-  #       resp <- stats_mgr_pvt$survey_stats() %>% pull(response) %>% {.[1]}
-  #       private$props_mgr$responses <- paste0("^", resp, "$")
-  #
-  #     }
-  #
-  #     ft_stats(df_stats = df_stats,
-  #              coi = NULL,
-  #              population = props_mgr$population,
-  #              stats = props_mgr$stats,
-  #              exclude =  props_mgr$exclude,
-  #              responses = props_mgr$responses,
-  #              rename = c(percent = "pct"),
-  #              widths = props_mgr$widths,
-  #              aligns = props_mgr$aligns,
-  #              subset_placement = props_mgr$subset_placement,
-  #              line_spacing = 1.0,
-  #              title_spacing = 1.0,
-  #
-  #              titles = props_mgr$titles,
-  #              title_max_char = 9999,
-  #              highlights = props_mgr$highlights,
-  #              footers = NULL,
-  #              footnotes = props_mgr$footnotes,
-  #
-  #              borders = props_mgr$borders,
-  #
-  #              bgs = props_mgr$bgs,
-  #              bgs_mgr = props_mgr$bgs_mgr,
-  #
-  #              fonts = props_mgr$fonts,
-  #              fonts_mgr = props_mgr$fonts_mgr,
-  #
-  #              paddings = props_mgr$paddings,
-  #
-  #              box = props_mgr$box,
-  #              grid = props_mgr$grid
-  #     )
-  #   }
-  #
-  # ),
 
   active = list(
 

@@ -49,11 +49,8 @@ ft_stats <- function(df_stats, ...,
                      highlights_mgr = NULL,
                      footers = NULL,
                      footnotes = TRUE,
-                     borders = list(),
                      borders_mgr = NULL,
-                     bgs = list(),
                      bgs_mgr = NULL,
-                     fonts = list(),
                      fonts_mgr = NULL,
                      paddings = list(),
                      box = NULL,
@@ -226,23 +223,14 @@ ft_stats <- function(df_stats, ...,
 
 
   hdr_2_stats<- as.character(df_hdr_rows %>% tail(1))
-  # ====================================================================
-  # ==========   rename the headers if requested    ==============
-
-
-  rename <- as.list(rename)
-
-  invisible(
-    mapply(function(stat_in, stat_out) {
-      hdr_2_stats[hdr_2_stats == stat_in] <<- stat_out
-    }, names(rename), rename)
-  )
-
 
   ## ====   set placement info for use later   ======
 
   #  attr(ft,"sub_placement") <- subset_placement
   ft$properties["sub_placement"] <- subset_placement
+
+  ft$properties["multi_year"] <- "year" %in% colnames(df_stats)
+  sections$nrow$years <- as.integer(ft$properties["multi_year"])
 
   ft <- ft %>%
     flextable::delete_rows(i=1, part = "header")
@@ -277,6 +265,14 @@ ft_stats <- function(df_stats, ...,
   hdr_lines <- hdr_lines %>% head(-1)
 
   nresponses <- df_stats %>% pull(response) %>% unique() %>% length()
+  nyears <- df_stats %>% pull(year) %>% unique() %>% length()
+
+  if(nyears == 1) {
+    hdr_lines <- tail(hdr_lines,-1)
+    sections$nrow$years <- 0
+  } else {
+    sections$nrow$years <- 1
+  }
 
   if(nresponses == 1) {
     hdr_lines <- head(hdr_lines,-1)
@@ -293,6 +289,19 @@ ft_stats <- function(df_stats, ...,
 
 
   if(!is.null(stats)) {
+
+    # ====================================================================
+    # ==========   rename the headers if requested    ==============
+
+
+    rename <- as.list(rename)
+
+    invisible(
+      mapply(function(stat_in, stat_out) {
+        stats_line[[1]][stats_line[[1]] == stat_in] <<- stat_out
+      }, names(rename), rename)
+    )
+
 
     sections$nrow$stats <- 1
 
@@ -324,9 +333,8 @@ ft_stats <- function(df_stats, ...,
     } else {
       message("Invalid fonts_mgr ... does not inherit class <FT_FontsMgr>")
     }
-  } else {
-    ft <- ft %>% handle_fonts(fonts = fonts)
   }
+
   # =========  do the backgrounds  ================
 
   if(!is.null(bgs_mgr)) {
@@ -335,8 +343,6 @@ ft_stats <- function(df_stats, ...,
     } else {
       message("Invalid bgs_mgr ... does not inherit class <FT_BGsMgr>")
     }
-  } else {
-    ft <- ft %>% handle_bgs(bgs = bgs)
   }
 
   # =========  do the paddings  ================
@@ -352,10 +358,6 @@ ft_stats <- function(df_stats, ...,
       browser()
       message("Invalid borders_mgr ... does not inherit class <FT_BordersMgr>")
     }
-  } else {
-
-    ft <- ft %>% handle_borders(borders = borders)
-
   }
 
   # ======= handle line spacing for body  ===========
