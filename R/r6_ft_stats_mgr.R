@@ -60,16 +60,14 @@ FT_StatsMgr <- R6Class(
       }
     },
 
-    ft = function(cois = NULL, suppress = NULL) {
+    ft = function(coi = NULL, df_stats = NULL, suppress = NULL) {
 
       props_mgr <- private$props_mgr_pvt
       stats_mgr <- private$stats_mgr_pvt
 
       if(is.null(suppress)) suppress <- private$suppress_pvt
 
-      df_stats <- stats_mgr$survey_stats(cois = cois, reduce = FALSE)
-
-      has_year <- "year" %in% colnames(df_stats)
+      if(is.null(df_stats)) df_stats <- stats_mgr$survey_stats(coi = coi, reduce = FALSE)
 
       if(private$use_first_factor) {
 
@@ -93,6 +91,7 @@ FT_StatsMgr <- R6Class(
                rename = props_mgr$renames,
                widths = props_mgr$widths,
                aligns = props_mgr$aligns,
+               digits = props_mgr$digits,
                subset_placement = props_mgr$subset_placement,
                line_spacing = 1.0,
                title_spacing = 1.0,
@@ -203,7 +202,7 @@ FT_DefaultStatsMgr <- R6Class(
       super$initialize(props_mgr = FT_DefaultStatPropsMgr$new(),
                        stats_mgr = stats_mgr)
 
-      stats_mgr$subsets <- c("Sex", "Race")
+      stats_mgr$subvars <- c("Sex", "Race")
 
     }
   )

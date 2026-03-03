@@ -12,6 +12,7 @@ FT_StatPropsMgr <- R6Class(
     renames_pvt = c(percent = "pct"),
     widths_pvt = c(subset = 2, ci = 2),
     aligns_pvt = c(ci_pvt = "center"),
+    digits_pvt = 1,
     subset_placement_pvt = "left",
 
     line_spacing_pvt = 1.0,
@@ -356,11 +357,29 @@ FT_StatPropsMgr <- R6Class(
 
     yes_only = function(value) {
 
-      if(missing(value)) return(invisible())
+      if(missing(value)) return(private$responses_pvt == "^Yes$")
 
       if(class(value) != "logical") return(NULL)
 
-      private$responses_pvt <- "^Yes$"
+      if(value)
+        private$responses_pvt <- "^Yes$"
+      else
+        private$responses_pvt <- ".*"
+
+    }
+    ,
+
+    digits = function(value) {
+
+      if(missing(value)) return(private$digits_pvt)
+
+      # 1. Check if it's actually a number
+      # 2. Check if it's a whole number (no decimals)
+      if (!is.numeric(value) || value %% 1 != 0) {
+        stop("Value must be a whole number (integer).", call. = FALSE)
+      }
+
+      private$digits_pvt <- as.integer(value)
     }
 
 
