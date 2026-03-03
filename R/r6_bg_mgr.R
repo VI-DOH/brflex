@@ -116,8 +116,9 @@ FT_BGsMgr <-
 
         if (!inherits(bg, "FT_Bg")) {
 
-          if(!inherits(bg, "FT_Bg")) {
-
+          if(inherits(bg, "character") && FT_Color$is_valid(bg)){
+            bg <- FT_Bg$new(bg)
+          } else {
             message("bg must be of class FT_Bg")
             return(NULL)
           }
@@ -130,6 +131,7 @@ FT_BGsMgr <-
       },
 
       apply = function(ft) {
+
 
         has_subvar_col <- "subvar" %in% ft$col_keys
 
@@ -170,12 +172,14 @@ FT_BGsMgr <-
 
 
         ft <- ft %>% self$apply_area("table")
-          ft <- ft %>%self$apply_area("titles", i = 1:nrow_titles, part = "header")
-          ft <- ft %>%self$apply_area("responses", i = nrow_header - 1, part = "header")
-          ft <- ft %>%self$apply_area("stats", i = nrow_header, part = "header")
-          ft <- ft %>%self$apply_area("data", part = "body")
-          ft <- ft %>%self$apply_area("footnotes",  part = "footer")
-          ft <- ft %>%self$apply_area("subvars", i = irows_subvars, j = jcols_subvars, part = "body")
+        ft <- ft %>% self$apply_area("header")
+        ft <- ft %>%self$apply_area("titles", i = 1:nrow_titles, part = "header")
+        ft <- ft %>%self$apply_area("responses", i = nrow_header - 1, part = "header")
+        ft <- ft %>%self$apply_area("stats", i = nrow_header, part = "header")
+        ft <- ft %>%self$apply_area("data", part = "body")
+        ft <- ft %>%self$apply_area("footnotes",  part = "footer")
+        ft <- ft %>%self$apply_area("subvars", i = irows_subvars,
+                                    j = jcols_subvars, part = "body")
 
         if(irows_subsets[1] > 0) ft <- ft %>%
           self$apply_area("subsets", i = irows_subsets, j = jcols_subsets, part = "body")
@@ -208,6 +212,7 @@ FT_BGsMgr <-
             part <- rc0$part
 
             bg  <-  bgs[[1]]$color
+
 
             ft <<- self$apply_bg(ft, i = rows, j = cols,
                                  bg = bg, part = part)
@@ -250,9 +255,26 @@ FT_BGsMgr <-
 
     active = list(
 
+      names = function(value) {
+
+        if(!missing(value)) {
+          message("This property is read-only")
+          return(NULL)
+        }
+
+        ls(private$bg, sorted = FALSE) %>% gsub("_pvt","", .)
+
+
+      },
+
       table = function(value) {
 
-        if(missing(value)) return(private$bg$table_pvt)
+        if(missing(value)) {
+
+          obj <- private$bg$table_pvt
+          if(length(obj) == 1) obj <-  obj[[1]]
+          return(obj)
+        }
 
         private$set_active(value, "table")
 
@@ -260,39 +282,60 @@ FT_BGsMgr <-
 
       data = function(value) {
 
-        if(missing(value)) return(private$bg$data_pvt)
+        if(missing(value)) {
 
+          obj <- private$bg$data_pvt
+          if(length(obj) == 1) obj <-  obj[[1]]
+          return(obj)
+        }
         private$set_active(value, "data")
 
       },
 
       header = function(value) {
 
-        if(missing(value)) return(private$bg$header_pvt)
+        if(missing(value)) {
 
+          obj <- private$bg$header_pvt
+          if(length(obj) == 1) obj <-  obj[[1]]
+          return(obj)
+        }
         private$set_active(value, "header")
 
       },
 
       responses = function(value) {
 
-        if(missing(value)) return(private$bg$responses_pvt)
+        if(missing(value)) {
 
+          obj <- private$bg$responses_pvt
+          if(length(obj) == 1) obj <-  obj[[1]]
+          return(obj)
+        }
         private$set_active(value, "responses")
 
       },
 
       stats = function(value) {
 
-        if(missing(value)) return(private$bg$stats_pvt)
+        if(missing(value)) {
 
+          obj <- private$bg$stats_pvt
+          if(length(obj) == 1) obj <-  obj[[1]]
+          return(obj)
+        }
         private$set_active(value, "stats")
 
       },
 
       subsets = function(value) {
 
-        if(missing(value)) return(private$bg$subsets_pvt)
+        if(missing(value)) {
+
+          obj <- private$bg$subsets_pvt
+          if(length(obj) == 1) obj <-  obj[[1]]
+          return(obj)
+        }
 
         private$set_active(value, "subsets")
 
@@ -300,15 +343,24 @@ FT_BGsMgr <-
 
       subvars = function(value) {
 
-        if(missing(value)) return(private$bg$subvars_pvt)
+        if(missing(value)) {
 
+          obj <- private$bg$subvars_pvt
+          if(length(obj) == 1) obj <-  obj[[1]]
+          return(obj)
+        }
         private$set_active(value, "subvars")
 
       },
 
       titles = function(value) {
 
-        if(missing(value)) return(private$bg$titles_pvt)
+        if(missing(value)) {
+
+          obj <- private$bg$titles_pvt
+          if(length(obj) == 1) obj <-  obj[[1]]
+          return(obj)
+        }
 
         private$set_active(value, "titles")
 
@@ -316,7 +368,13 @@ FT_BGsMgr <-
 
       footer = function(value) {
 
-        if(missing(value)) return(private$bg$footer_pvt)
+
+        if(missing(value)) {
+
+          obj <- private$bg$footer_pvt
+          if(length(obj) == 1) obj <-  obj[[1]]
+          return(obj)
+        }
 
         private$set_active(value, "footer")
 
@@ -341,7 +399,14 @@ FT_DefaultBGsMgr <-
 
   )
 
-
+makeActiveBinding(
+  "names",
+  function() {
+    c("table", "header", "titles", "responses", "stats",
+      "data", "subsets", "subvars", "footer", "footnotes")
+  },
+  env = FT_BGsMgr
+)
 
 #' @export
 FT_Bg <-

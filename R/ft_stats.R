@@ -38,6 +38,7 @@ ft_stats <- function(df_stats, ...,
                      responses = ".*",
                      rename = c(percent = "pct"),
                      widths = c(subset = 3, ci = 1),
+                     digits = 1,
                      aligns = c(ci = "center"),
                      subset_placement = "left",
                      col_padding = NULL, #c(percent = 0.05, den = 0.1),
@@ -274,16 +275,23 @@ ft_stats <- function(df_stats, ...,
   hdr_lines <- purrr::map(1:nrow(df_hdr_rows), ~df_hdr_rows[.x,] %>% as.character())
 
   stats_line <- hdr_lines %>% tail(1)
-  hdr_lines <- hdr_lines %>% head(-1)
 
   nresponses <- df_stats %>% pull(response) %>% unique() %>% length()
 
-  if(nresponses == 1) {
-    hdr_lines <- head(hdr_lines,-1)
-    sections$nrow$responses <- 0
-  } else {
-    sections$nrow$responses <- 1
-  }
+  hdr_lines <- hdr_lines %>% head(-1) # get rid of stats
+
+  hdr_lines <- purrr::map(hdr_lines, \(hdr_line) {
+
+    ncats <- unique(hdr_line) %>% length() - 1
+
+    if(ncats == 1) {
+      hdr_line <- NULL
+    }
+    hdr_line
+
+  }) %>% purrr::compact()
+
+  sections$nrow$responses <- length(hdr_lines)
 
   purrr::walk(hdr_lines,\(hdrs) {
 
@@ -422,7 +430,8 @@ ft_stats <- function(df_stats, ...,
   #  ==== there are some border issues so this their fix  ========
 
   ft <- ft %>%
-    flextable::fix_border_issues()
+    flextable::fix_border_issues() %>%
+    colformat_double(digits = digits)
 
   #  ====  caption   ===========
 
