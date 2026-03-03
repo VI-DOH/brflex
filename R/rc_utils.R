@@ -39,11 +39,29 @@ titles_rc <- function(ft) {
 
 responses_rc <- function(ft) {
 
+  if(ft$header$sections$nrow$responses == 0) return(list())
+
   cols <- response_cols(ft)
 
   cols <- purrr::map2(cols$min, cols$max,\(min, max) min:max) %>% unlist()
 
   list(rows = responses_rows(ft),
+       cols = cols,
+       part = "header")
+
+}
+
+
+
+years_rc <- function(ft) {
+
+  if(!ft$properties[["multi_year"]]) return(list())
+
+  cols <- years_cols(ft)
+
+  cols <- purrr::map2(cols$min, cols$max,\(min, max) min:max) %>% unlist()
+
+  list(rows = years_rows(ft),
        cols = cols,
        part = "header")
 
@@ -119,6 +137,18 @@ data_rc <- function(ft) {
   rc
 }
 
+footnotes_rc <- function(ft) {
+
+  list(
+    rows = 1:nrow_part(ft, part = "footer"),
+    cols = 1:length(ft$body$col_keys),
+    part = "footer"
+  )
+
+
+}
+
+
 titles_rows <- function(ft) {
 
   1:(ft$header$sections$nrow$titles)
@@ -127,8 +157,15 @@ titles_rows <- function(ft) {
 
 responses_rows <- function(ft) {
 
+  irow <- ft$header$sections$nrow$titles + ft$header$sections$nrow$years + 1
+  #irow:(irow + ft$header$sections$nrow$responses - 1)
+  irow
+}
+
+years_rows <- function(ft) {
+
   irow <- ft$header$sections$nrow$titles + 1
-  irow:(irow + ft$header$sections$nrow$responses - 1)
+
 
 }
 
@@ -141,7 +178,7 @@ titles_rows <- function(ft) {
 
 stats_rows <- function(ft) {
 
-  irow <- ft$header$sections$nrow$titles + ft$header$sections$nrow$responses + 1
+  irow <- ft %>% nrow_part(part = "header")
   irow:(irow + ft$header$sections$nrow$stats - 1)
 
 }
@@ -210,6 +247,31 @@ response_cols <- function(ft) {
   df %>% group_by(resp ,grp) %>%
     summarise(min = min(jcol), max = max(jcol)) %>%
     filter(resp != "") %>%
+    arrange(min) %>% ungroup()
+
+
+}
+
+
+years_cols <- function(ft) {
+
+  irows <-years_rows(ft)
+
+  yrs <- ft$header$dataset[irows,] %>% as.character()
+
+  df <- data.frame(jcol =1:length(ft$header$col_keys), yrs = yrs)
+
+  yrss <-yrs %>% unique()
+
+  grp <- yrs %>% purrr::map_int(\(r) {
+    which(r == yrss)
+  })
+
+  df <- df %>% mutate(grp = grp)
+
+  df %>% group_by(yrs ,grp) %>%
+    summarise(min = min(jcol), max = max(jcol)) %>%
+    filter(yrs != "") %>%
     arrange(min) %>% ungroup()
 
 

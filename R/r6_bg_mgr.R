@@ -11,6 +11,7 @@ FT_BGsMgr <-
         data_pvt = NULL,
         header_pvt = NULL,
         responses_pvt = NULL,
+        years_pvt = NULL,
         stats_pvt = NULL,
         subsets_pvt = NULL,
         subvars_pvt = NULL,
@@ -21,7 +22,14 @@ FT_BGsMgr <-
 
       set_active = function(value, area) {
 
-        if(inherits(value, "FT_Color")) {
+        if(is.null(value)) {
+
+          private$bg[[paste0(area, "_pvt")]] <- NULL
+          return()
+        }
+
+        if (inherits(value, "FT_Color")) {
+
         } else if(inherits(value[[1]], "FT_Color")) {
 
           value <-value[[1]]
@@ -45,6 +53,7 @@ FT_BGsMgr <-
                             data = NULL,
                             header = NULL,
                             responses = NULL,
+                            years = NULL,
                             stats = NULL,
                             subsets = NULL,
                             subvars = NULL,
@@ -301,6 +310,14 @@ FT_BGsMgr <-
           return(obj)
         }
         private$set_active(value, "header")
+
+      },
+
+      years = function(value) {
+
+        if(missing(value)) return(private$bg$years_pvt)
+
+        private$set_active(value, "years")
 
       },
 

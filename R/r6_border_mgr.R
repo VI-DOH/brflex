@@ -11,6 +11,7 @@ FT_BordersMgr <-
         data_pvt = NULL,
         header_pvt = NULL,
         responses_pvt = NULL,
+        years_pvt = NULL,
         stats_pvt = NULL,
         subsets_pvt = NULL,
         subvars_pvt = NULL,
@@ -40,6 +41,7 @@ FT_BordersMgr <-
                             data = NULL,
                             header = NULL,
                             responses = NULL,
+                            years = NULL,
                             stats = NULL,
                             subsets = NULL,
                             subvars = NULL,
@@ -212,6 +214,14 @@ FT_BordersMgr <-
         if(missing(value)) return(private$borders$header_pvt)
 
         private$set_active(value, "header")
+
+      },
+
+      years = function(value) {
+
+        if(missing(value)) return(private$borders$years_pvt)
+
+        private$set_active(value, "years")
 
       },
 
@@ -749,6 +759,7 @@ FT_DefaultBordersMgr <-
 
         super$titles <- NULL
         super$responses <- brdrs_solid_box_solid_int
+        super$years <- brdrs_solid_box_solid_int
         super$stats <- brdrs_solid_box_solid_int
         super$data <- brdrs_solid_box_dotted_int
         super$subsets <- brdrs_solid_box_dotted_int

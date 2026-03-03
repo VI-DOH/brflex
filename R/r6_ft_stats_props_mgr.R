@@ -9,7 +9,7 @@ FT_StatPropsMgr <- R6Class(
     stats_pvt = c("den", "num", "percent", "ci"),
     exclude_pvt = "^$",
     responses_pvt = ".*",
-    rename_pvt = c(percent = "pct"),
+    renames_pvt = c(percent = "pct"),
     widths_pvt = c(subset = 2, ci = 2),
     aligns_pvt = c(ci_pvt = "center"),
     digits_pvt = 1,
@@ -52,68 +52,68 @@ FT_StatPropsMgr <- R6Class(
     ##
     ##        convenience functions
 
-    std_borders = function(){
-
-      solid_brdr <- officer::fp_border(style = "solid", color = "grey11", width = 1)
-      dotted_brdr <- officer::fp_border(style = "dotted", color = "grey11", width = 1)
-      dashed_brdr <- officer::fp_border(style = "dashed", color = "grey11", width = 1)
-
-      private$borders_pvt = ft_borders_list(
-        responses = ft_borders(left = solid_brdr,
-                               right = solid_brdr,
-                               midv = dotted_brdr),
-        stats = ft_all_borders(solid_brdr),
-        subvars = ft_borders(top = solid_brdr),
-        subsets = ft_borders(top = solid_brdr,
-                             left = solid_brdr,
-                             right = solid_brdr,
-                             midh = dotted_brdr),
-        data = ft_outside_borders(solid_brdr)
-      )
-
-    },
-
-    set_border_value = function(name, side, item, value) {
-
-      if(any(missing(name), missing(side), missing(item), missing(value))) return(FALSE)
-
-      nm <- paste0(name,"_borders")
-      brdrs <- private$borders_pvt[[nm]]
-
-      if(is.null(brdrs)) {
-
-        brdrs <- ft_borders()
-      }
-
-      brdr <- brdrs[[side]]
-
-      if(!inherits(brdr,"fp_border")) {
-        brdr <- fp_border()
-      }
-
-      brdr[[item]] <- value
-      brdrs[[side]] <- brdr
-
-      private$borders_pvt[[nm]] <- brdrs
-    },
-
-    set_border = function(name, side, border) {
-
-      if(any(missing(name), missing(side), missing(border))) return(FALSE)
-
-
-      nm <- paste0(name,"_borders")
-      brdrs <- private$borders_pvt[[nm]]
-
-      if(is.null(brdrs)) {
-
-        brdrs <- ft_borders()
-      }
-
-      brdrs[[side]] <- border
-
-      private$borders_pvt[[nm]] <- brdrs
-    },
+    # std_borders = function(){
+    #
+    #   solid_brdr <- officer::fp_border(style = "solid", color = "grey11", width = 1)
+    #   dotted_brdr <- officer::fp_border(style = "dotted", color = "grey11", width = 1)
+    #   dashed_brdr <- officer::fp_border(style = "dashed", color = "grey11", width = 1)
+    #
+    #   private$borders_pvt = ft_borders_list(
+    #     responses = ft_borders(left = solid_brdr,
+    #                            right = solid_brdr,
+    #                            midv = dotted_brdr),
+    #     stats = ft_all_borders(solid_brdr),
+    #     subvars = ft_borders(top = solid_brdr),
+    #     subsets = ft_borders(top = solid_brdr,
+    #                          left = solid_brdr,
+    #                          right = solid_brdr,
+    #                          midh = dotted_brdr),
+    #     data = ft_outside_borders(solid_brdr)
+    #   )
+    #
+    # },
+    #
+    # set_border_value = function(name, side, item, value) {
+    #
+    #   if(any(missing(name), missing(side), missing(item), missing(value))) return(FALSE)
+    #
+    #   nm <- paste0(name,"_borders")
+    #   brdrs <- private$borders_pvt[[nm]]
+    #
+    #   if(is.null(brdrs)) {
+    #
+    #     brdrs <- ft_borders()
+    #   }
+    #
+    #   brdr <- brdrs[[side]]
+    #
+    #   if(!inherits(brdr,"fp_border")) {
+    #     brdr <- fp_border()
+    #   }
+    #
+    #   brdr[[item]] <- value
+    #   brdrs[[side]] <- brdr
+    #
+    #   private$borders_pvt[[nm]] <- brdrs
+    # },
+    #
+    # set_border = function(name, side, border) {
+    #
+    #   if(any(missing(name), missing(side), missing(border))) return(FALSE)
+    #
+    #
+    #   nm <- paste0(name,"_borders")
+    #   brdrs <- private$borders_pvt[[nm]]
+    #
+    #   if(is.null(brdrs)) {
+    #
+    #     brdrs <- ft_borders()
+    #   }
+    #
+    #   brdrs[[side]] <- border
+    #
+    #   private$borders_pvt[[nm]] <- brdrs
+    # },
 
     add_widths = function(...) {
 
@@ -206,15 +206,6 @@ FT_StatPropsMgr <- R6Class(
       private$fonts_pvt <- value
     },
 
-    bgs = function(value) {
-
-      if(missing(value)) return(private$bgs_pvt)
-
-      if(class(value) != "ft_bgs_list") return(NULL)
-
-      private$bgs_pvt <- value
-    },
-
     paddings = function(value) {
 
       if(missing(value)) return(private$paddings_pvt)
@@ -234,16 +225,13 @@ FT_StatPropsMgr <- R6Class(
       private$widths_pvt
     },
 
-    borders = function(value) {
+    renames = function(value) {
 
-      if(missing(value)) return(private$borders_pvt)
+      if(missing(value)) return(private$renames_pvt)
 
-      if(!is.null(value)) {
-        if(!(is.list(value) && length(value) == 0)) {
-          if(!inherits(value, "ft_borders_list")) return(NULL)
-        }}
+      if(class(value) != "character") return(NULL)
 
-      private$borders_pvt <- value
+      private$renames_pvt <- value
     },
 
     exclude = function(value) {
@@ -423,7 +411,7 @@ FT_DefaultStatPropsMgr <- R6Class(
         stats = c("den","num","percent"),
 
         aligns = c(ci = "center"),
-        exclude = "^Don|^AI",
+        exclude = "^Don",
         widths = c(subset = 1.2, ci = 2),
         subset_placement = "top",
         paddings = ft_paddings_list(data = ft_padding(2,1,5,5))

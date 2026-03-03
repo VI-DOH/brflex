@@ -52,7 +52,6 @@
 }
 
 
-
 #' @export
 FT_FontsMgr <-
   R6::R6Class(
@@ -65,6 +64,7 @@ FT_FontsMgr <-
         data_pvt = NULL,
         header_pvt = NULL,
         responses_pvt = NULL,
+        years_pvt = NULL,
         stats_pvt = NULL,
         subsets_pvt = NULL,
         subvars_pvt = NULL,
@@ -98,7 +98,7 @@ FT_FontsMgr <-
 
       },
 
-      get_active = function(value, area) {
+      set_active = function(value, area) {
 
         if(!inherits(value, "FT_Font")) {
           if(!inherits(value[[1]], "FT_Font")) {
@@ -159,7 +159,7 @@ FT_FontsMgr <-
         private$font$table_pvt[[1]] <- private$font$table_pvt[[1]] %<<% default_font
 
         private$merge_one(major = "data", areas = c("subsets", "subvars"))
-        private$merge_one(major = "header", areas = c("titles", "responses", "stats"))
+        private$merge_one(major = "header", areas = c("titles", "years", "responses", "stats"))
         private$merge_one(major = "footer", areas = c("footnotes"))
 
       },
@@ -239,11 +239,12 @@ FT_FontsMgr <-
           self$apply_area("titles", i = 1:nrow_titles, part = "header") %>%
           self$apply_area("responses", i = nrow_header - 1, part = "header") %>%
           self$apply_area("stats", i = nrow_header, part = "header")  %>%
+          self$apply_area("years", part = "header")%>%
           self$apply_area("data", part = "body")%>%
           self$apply_area("footnotes",  part = "footer") %>%
           self$apply_area("subvars", i = irows_subvars, j = jcols_subvars, part = "body")
 
-        if(irows_subsets[1] > 0) ft <- ft %>%
+        if(!is.null(irows_subsets) && irows_subsets[1] > 0) ft <- ft %>%
           self$apply_area("subsets", i = irows_subsets, j = jcols_subsets, part = "body")
 
         ft
@@ -252,6 +253,13 @@ FT_FontsMgr <-
       apply_area = function(ft, area, i = NULL, j = NULL, part) {
 
         if(is.null(i)) i <- 1:(ft[[part]]$content$nrow)
+
+        f <- paste0(area, "_rc")
+        rc <- do.call(f, args = list(ft))
+
+        i <- rc$rows
+        j = rc$cols
+        part <- rc$part
 
         nrow <- length(i)
 
@@ -302,73 +310,81 @@ FT_FontsMgr <-
 
       table = function(value) {
 
-        if(missing(value)) return(private$font$table_pvt)
+        if(missing(value)) return(private$font$table_pvt[[1]])
 
-        private$get_active(value, "table")
+        private$set_active(value, "table")
 
       },
 
       data = function(value) {
 
-        if(missing(value)) return(private$font$data_pvt)
+        if(missing(value)) return(private$font$data_pvt[[1]])
 
-        private$get_active(value, "data")
+        private$set_active(value, "data")
 
       },
 
       header = function(value) {
 
-        if(missing(value)) return(private$font$header_pvt)
+        if(missing(value)) return(private$font$header_pvt[[1]])
 
-        private$get_active(value, "header")
+        private$set_active(value, "header")
+
+      },
+
+      years = function(value) {
+
+        if(missing(value)) return(private$font$years_pvt[[1]])
+
+        private$set_active(value, "years")
 
       },
 
       responses = function(value) {
 
-        if(missing(value)) return(private$font$responses_pvt)
+        if(missing(value)) return(private$font$responses_pvt[[1]])
 
-        private$get_active(value, "responses")
+        private$set_active(value, "responses")
 
       },
 
       stats = function(value) {
 
-        if(missing(value)) return(private$font$stats_pvt)
+        if(missing(value)) return(private$font$stats_pvt[[1]])
 
-        private$get_active(value, "stats")
+        private$set_active(value, "stats")
 
       },
 
       subsets = function(value) {
 
-        if(missing(value)) return(private$font$subsets_pvt)
+        if(missing(value)) return(private$font$subsets_pvt[[1]])
 
-        private$get_active(value, "subsets")
+        private$set_active(value, "subsets")
 
       },
 
       subvars = function(value) {
 
-        if(missing(value)) return(private$font$subvars_pvt)
+        if(missing(value)) return(private$font$subvars_pvt[[1]])
 
-        private$get_active(value, "subvars")
+        private$set_active(value, "subvars")
 
       },
 
       titles = function(value) {
 
-        if(missing(value)) return(private$font$titles_pvt)
+        if(missing(value)) return(private$font$titles_pvt[[1]])
 
-        private$get_active(value, "titles")
+        private$set_active(value, "titles")
 
       },
 
       footer = function(value) {
 
-        if(missing(value)) return(private$font$footer_pvt)
+        if(missing(value)) return(private$font$footer_pvt[[1]])
 
-        private$get_active(value, "footer")
+        private$set_active(value, "footer")
 
       }
     )
