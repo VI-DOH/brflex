@@ -50,21 +50,21 @@
 # }
 
 
-ft_stats_html <- function(df = NULL, coi, subsets = NULL, digits = 2, responses = ".*", ...) {
+ft_stats_html <- function(df = NULL, coi, subvars = NULL, digits = 2, responses = ".*", ...) {
 
 
   if(is.null(responses)) responses <- ".*"
 
   if(is.null(df)) df <- prepped_data()
 
-  df_stats <-  brfss::survey_stats(df, coi = coi, pct = TRUE, digits = digits, subsets = subsets)
+  df_stats <-  brfss::survey_stats(df, coi = coi, pct = TRUE, digits = digits, subvars = subvars)
 
   df_stats <- df_stats %>%
     filter(grepl(responses, response))
 
   if(is.null(df_stats)) return(NULL)
 
-  if(length(subsets) == 0) df_stats <- df_stats %>% select(-matches("subvar"))
+  if(length(subvars) == 0) df_stats <- df_stats %>% select(-matches("subvar"))
 
   ft_stats(df_stats, ...)
 

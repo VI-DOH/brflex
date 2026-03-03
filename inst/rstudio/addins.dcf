@@ -1,0 +1,4 @@
+Name: Build With Timestamp
+Description: Run devtools::build() with start/end timestamps
+Binding: build_with_stamp
+Interactive: true
