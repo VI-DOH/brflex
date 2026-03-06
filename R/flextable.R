@@ -222,7 +222,6 @@ which_subvar <- function(subvar, subvars) {
     y
   })
 
-
   x
 }
 
@@ -234,12 +233,13 @@ ft_add_titles <- function(ft, titles, title_spacing = 1.0) {
 
   if(ntitles > 0) {
 
-    df <- ft$body$dataset
+ df <- ft$body$dataset
 
     titles <-   sapply(titles, function(title){
       if(grepl("\\{(.*)\\}", title)) {
 
         #  ====  figure out which attribute and assign that to the title   =====
+
 
         attrib <- gsub(".*\\{(.*)\\}.*","\\1",title)
         attrib_val <- attr(df_stats, attrib)
