@@ -141,58 +141,12 @@ FT_BGsMgr <-
 
       apply = function(ft) {
 
+        areas <- FT_SectionMgr$names
 
-        has_subvar_col <- "subvar" %in% ft$col_keys
+        purrr::walk(areas, \(area) {
 
-        if(has_subvar_col) {
-          jcols_subvars <- 1
-          irows_subvars <- NULL
-
-          jcols_subsets <- 2
-          irows_subsets <- NULL
-
-        } else {
-
-          rowspans <- ft$body$spans$rows
-
-          if(!is.null(dim(rowspans))) {
-
-            jcols_subvars <- 1
-            irows_subvars <- which(ft$body$spans$rows[,1] > 1)
-
-            jcols_subsets <- 1
-            irows_subsets <- which(ft$body$spans$rows[,1] == 1)
-          }else {
-            jcols_subvars <- 1
-            irows_subvars <- 1
-
-            jcols_subsets <- 0
-            irows_subsets <- 0
-          }
-        }
-
-        nrow_header <- ft$header$content$nrow
-        nrow_titles <- nrow_header - 2
-
-        #handle_bgs_header(bgs)
-        # handle_bgs_response(bgs)%>%
-        #   handle_bgs_stats(bgs) %>%
-        #self$apply_titles(ft)
-
-
-        ft <- ft %>% self$apply_area("table")
-        ft <- ft %>% self$apply_area("header")
-        ft <- ft %>%self$apply_area("titles", i = 1:nrow_titles, part = "header")
-        ft <- ft %>%self$apply_area("responses", i = nrow_header - 1, part = "header")
-        ft <- ft %>%self$apply_area("stats", i = nrow_header, part = "header")
-        ft <- ft %>%self$apply_area("data", part = "body")
-        ft <- ft %>%self$apply_area("footnotes",  part = "footer")
-        ft <- ft %>%self$apply_area("subvars", i = irows_subvars,
-                                    j = jcols_subvars, part = "body")
-
-        if(irows_subsets[1] > 0) ft <- ft %>%
-          self$apply_area("subsets", i = irows_subsets, j = jcols_subsets, part = "body")
-
+          ft <<- ft %>% self$apply_area(area)
+        })
         ft
 
       },
@@ -200,6 +154,8 @@ FT_BGsMgr <-
       apply_area = function(ft, area, i = NULL, j = NULL, part) {
 
         bgs <- private$bg[[paste0(area,"_pvt")]]
+
+        # check if there is a bg to apply, if not return the ft
 
         if(is.null(bgs)) return(ft)
 
@@ -216,15 +172,9 @@ FT_BGsMgr <-
 
           purrr::walk(rc, \(rc0) {
 
-            rows <- rc0$rows
-            cols <- rc0$cols
-            part <- rc0$part
-
-            bg  <-  bgs[[1]]$color
-
-
-            ft <<- self$apply_bg(ft, i = rows, j = cols,
-                                 bg = bg, part = part)
+            ft <<- self$apply_bg(ft, i = rc0$rows, j = rc0$cols,
+                                 bg = bgs[[1]]$color,
+                                 part = rc0$part)
           })
 
 
