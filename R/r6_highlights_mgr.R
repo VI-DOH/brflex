@@ -260,6 +260,7 @@ FT_HighlightRow <-
 
     public = list(
 
+
       initialize  = function(where, col_nums = c(1,2),
                              font = ft_font_parts(),
                              bg = NULL,

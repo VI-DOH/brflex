@@ -199,6 +199,8 @@ FT_FontsMgr <-
 
       apply = function(ft) {
 
+
+
         has_subvar_col <- "subvar" %in% ft$col_keys
 
         if(has_subvar_col) {

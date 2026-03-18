@@ -9,31 +9,7 @@ FT_StatsMgr <- R6Class(
     props_mgr_pvt = NULL,
     multi_yr = FALSE,
     years = NULL,
-    use_first_factor = FALSE,
-    suppress_pvt = FALSE,
-    suppress_if_pvt =  c(low_num = "num < 6", high_cv = "cv > 30"),
-
-    add_suppression = function(df, include_why = FALSE) {
-
-      rule_exprs <- purrr::map(private$suppress_if_pvt, rlang::parse_expr)
-
-      df$suppress_reason <- purrr::pmap_chr(
-        df,
-        function(...) {
-          row <- list(...)
-          hits <- names(rule_exprs)[
-            purrr::map_lgl(rule_exprs, ~ rlang::eval_tidy(.x, data = row))
-          ]
-          if (length(hits) == 0) NA_character_ else paste(hits, collapse = "; ")
-        }
-      )
-
-      df$suppress <- !is.na(df$suppress_reason)
-
-      if(!include_why) df <- df %>% select(-suppress_reason)
-
-      df
-    }
+    use_first_factor = FALSE
   ),
 
   public = list(
@@ -57,15 +33,15 @@ FT_StatsMgr <- R6Class(
         if("StatsMgr" %in% class(stats_mgr)) {
           private$stats_mgr_pvt <- stats_mgr
         }
+      } else {
+        private$stats_mgr_pvt <- brfss::StatsMgr$new()
       }
     },
 
-    ft = function(coi = NULL, df_stats = NULL, suppress = NULL) {
+    ft = function(coi = NULL, df_stats = NULL) {
 
       props_mgr <- private$props_mgr_pvt
       stats_mgr <- private$stats_mgr_pvt
-
-      if(is.null(suppress)) suppress <- private$suppress_pvt
 
       if(is.null(df_stats)) df_stats <- stats_mgr$survey_stats(coi = coi, reduce = FALSE)
 
@@ -78,11 +54,8 @@ FT_StatsMgr <- R6Class(
 
       }
 
-      if(suppress) {
-        df_stats <- df_stats %>% private$add_suppression(include_why = FALSE)
-      } else {
-        df_stats <- df_stats %>% mutate(suppress = FALSE)
-      }
+
+      df_stats <- df_stats %>% mutate(suppress = FALSE)
 
       ft_stats(df_stats = df_stats,
                coi = NULL,
@@ -159,24 +132,6 @@ FT_StatsMgr <- R6Class(
         private$props_mgr_pvt <- value
       }
 
-    },
-
-    suppress_if = function(value) {
-
-      if(missing(value)) return(private$suppress_if_pvt)
-
-      if(!class(value) == "character") return(NULL)
-
-      private$suppress_if_pvt <-value
-    },
-
-    suppress = function(value) {
-
-      if(missing(value)) return(private$suppress_pvt)
-
-      if(!class(value) == "logical") return(NULL)
-
-      private$suppress_pvt <-value
     },
 
     first_response = function(value) {

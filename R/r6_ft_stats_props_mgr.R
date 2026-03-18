@@ -265,7 +265,6 @@ FT_StatPropsMgr <- R6Class(
 
       if(missing(value)) return(private$box_pvt)
 
-      browser()
       if(!is.null(value) && class(value) != "ft_box") return(NULL)
 
       private$box_pvt <- value

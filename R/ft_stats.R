@@ -107,19 +107,6 @@ ft_stats <- function(df_stats, ...,
 
   df_stats <- df_stats %>% set_population(population)
 
-  # if(is.null(population) ) {
-  #   if("population" %in%  names(attributes(df_stats))) {
-  #
-  #     population <- attr(df_stats, "population")
-  #
-  #     df_stats <- df_stats %>%
-  #       mutate(subset = ifelse(subset == "All Respondents", population, subset))
-  #   }
-  # } else {
-  #
-  #   df_stats <- df_stats %>%
-  #     mutate(subset = ifelse(subset == "All Respondents", population, subset))
-  # }
 
   #  character for separating stats and vals
 
@@ -136,8 +123,6 @@ ft_stats <- function(df_stats, ...,
   }
   # get the set of valid values
 
-  # vals <- values() %>% filter(col_name == coi) %>% pull(text)
-
   vals <- df_stats_rpt %>% pull(response) %>% unique()
   nvals <- length(vals)
 
@@ -145,7 +130,6 @@ ft_stats <- function(df_stats, ...,
     select(where(is.numeric), matches("^ci$")) %>%
     colnames() %>%
     {.[. != "year"]}
-
 
   stats_rm <- stats_in %>% {.[!. %in% stats]}
 
@@ -167,7 +151,6 @@ ft_stats <- function(df_stats, ...,
     unique()
   else subvars  <-  character(0)
 
-
   df_tbl <- widen(df_stats_rpt)
 
   df_suppress <- df_tbl %>%
@@ -186,7 +169,7 @@ ft_stats <- function(df_stats, ...,
       mutate(my_sub = which_subvar(subvar = subvar, subvars = subvars) ) %>%
       arrange(my_sub, rn) %>%
       select(-my_sub, -rn) %>%
-      mutate(across(where(is.numeric), ~if_else(is.na(.x), 0, .x))) %>%
+#      mutate(across(where(is.numeric), ~if_else(is.na(.x), 0, .x))) %>%
       mutate(across(where(is.character), ~if_else(is.na(.x), "-", .x)))
   }
 
@@ -363,7 +346,7 @@ ft_stats <- function(df_stats, ...,
     if(inherits(borders_mgr, "FT_BordersMgr")) {
       ft <- ft %>% borders_mgr$apply()
     } else {
-      browser()
+
       message("Invalid borders_mgr ... does not inherit class <FT_BordersMgr>")
     }
   }
