@@ -63,7 +63,7 @@ ft_stats <- function(df_stats, ...,
 
   if(any(c("brfss_data", "brfss_prepped") %in% class(df_stats))) {
     if(missing(..1)) {
-      return(NULL)
+      return(ft_no_data())
     }
     coi <- rlang::as_name(enquos(...)[[1]])
     df_stats <- survey_stats(df_stats, coi = coi, digits = 1,
@@ -74,7 +74,7 @@ ft_stats <- function(df_stats, ...,
     message(paste0("=======================================\n",
                    "Invalid BRFSS stats data\n",
                    "========================================"))
-    return(NULL)
+    return(ft_no_data())
   }
 
   df_stats <- df_stats %>%
@@ -86,7 +86,7 @@ ft_stats <- function(df_stats, ...,
     message(paste0("===================================================\n",
                    "Invalid responses filter ... no matching responses\n",
                    "==================================================="))
-    return(NULL)
+    return(ft_no_data())
   }
 
   #  ====  get the attributes from the stats df to use later  ============
@@ -433,6 +433,22 @@ ft_stats <- function(df_stats, ...,
   ft
 }
 
+ft_no_data <- function() {
+
+
+  df <- data.frame(x = c("", "No data available", ""))
+
+  df %>% flextable() %>%
+    delete_part() %>%
+    hline_top() %>%
+    add_header_lines(c("", "")) %>%
+    width(width = 4) %>%
+    align(align = "center") %>%
+    font(fontname = "Arial") %>%
+    bold(bold = TRUE) %>%
+    fontsize(size = 14)
+
+}
 
 widen <- function(df_stats) {
 

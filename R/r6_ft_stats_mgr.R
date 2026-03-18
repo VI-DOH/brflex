@@ -45,7 +45,7 @@ FT_StatsMgr <- R6Class(
 
       if(is.null(df_stats)) df_stats <- stats_mgr$survey_stats(coi = coi, reduce = FALSE)
 
-      if(is.null(df_stats)) return(NULL)
+      if(is.null(df_stats)) return(ft_no_data())
 
       if(private$use_first_factor) {
 
