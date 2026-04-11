@@ -187,7 +187,7 @@ FT_SectionMgr <-
 makeActiveBinding(
   "names",
   function() {
-    c("table", "header", "titles", "responses", "stats",
+    c("table", "header", "titles", "years", "responses", "stats",
       "data", "subsets", "subvars", "footer", "footnotes")
   },
   env = FT_SectionMgr

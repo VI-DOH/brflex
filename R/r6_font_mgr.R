@@ -285,6 +285,7 @@ FT_FontsMgr <-
 
       apply_font = function(ft, i = NULL, j = NULL, font , part = "header") {
 
+        cat("applying font ... <", font$font, ">\n", sep = "")
         ft %>%
           flextable::fontsize(i = i, j = j, size = font$font.size, part = part) %>%
           flextable::color(i = i, j = j, color = font$color, part = part) %>%
@@ -401,7 +402,7 @@ FT_DefaultFontsMgr <-
 
     public = list(
 
-      initialize = function(font = "Arial") {
+      initialize = function(font = "Inter") {
 
         super$add_font(FT_Font$new(font = font, color = "grey22", font.size = 12), "table")
 
@@ -618,7 +619,7 @@ FT_DefaultFont <-
 
 
         super$color <- "black"
-        super$font <- "Arial"
+        super$font <- "Inter"
         super$font.size <- 10
         super$bold <- FALSE
         super$italic <- FALSE

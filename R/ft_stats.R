@@ -270,7 +270,7 @@ ft_stats <- function(df_stats, ...,
 
   }) %>% purrr::compact()
 
-  sections$nrow$responses <- length(hdr_lines)
+  sections$nrow$responses <- min(length(hdr_lines),1)
 
   purrr::walk(hdr_lines,\(hdrs) {
 

@@ -55,7 +55,7 @@ ft_font_list <- function(table = NULL,
 #' @returns the ft_font object
 #' @export
 #'
-ft_font <- function (color = "black", font = "Arial", font.size = 10,
+ft_font <- function (color = "black", font = "Inter", font.size = 10,
                      bold = FALSE, italic = FALSE,
                      underlined = FALSE,
                      vertical.align = "baseline",
