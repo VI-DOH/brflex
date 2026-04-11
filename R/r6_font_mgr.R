@@ -199,8 +199,6 @@ FT_FontsMgr <-
 
       apply = function(ft) {
 
-
-
         has_subvar_col <- "subvar" %in% ft$col_keys
 
         if(has_subvar_col) {
@@ -276,6 +274,9 @@ FT_FontsMgr <-
         purrr::walk2(i, ifonts,\(irow, ifnt) {
           #if(area == "responses") browser()
           fnt  <-  private$font[[paste0(area,"_pvt")]][[ifnt]]
+
+
+          cat("applying ... ", area, "... ", fnt$font, "\n")
 
           ft <<- self$apply_font(ft, i = irow, j = j,
                                  font = fnt, part = part)
