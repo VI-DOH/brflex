@@ -402,7 +402,7 @@ FT_DefaultFontsMgr <-
 
     public = list(
 
-      initialize = function(font = "Open Sans") {
+      initialize = function(font = "sans-serif") {
 
         super$add_font(FT_Font$new(font = font, color = "grey22", font.size = 12), "table")
 
@@ -611,15 +611,10 @@ FT_DefaultFont <-
     ),
 
     public = list(
-      initialize = function (color = NULL, font = NULL, font.size = NULL,
-                             bold = NULL, italic = NULL,
-                             underlined = NULL,
-                             vertical.align = NULL,
-                             shading.color = NULL) {
-
+      initialize = function () {
 
         super$color <- "black"
-        super$font <- "Open Sans"
+        super$font <- "sans-serif"
         super$font.size <- 10
         super$bold <- FALSE
         super$italic <- FALSE
