@@ -14,25 +14,31 @@ table_rc <- function(ft) {
 
 header_rc <- function(ft) {
 
-  list(rows = 1:ft$header$content$nrow,
-       cols = 1:length(ft$col_keys),
-       part = "header"
+  list(
+    list(rows = 1:ft$header$content$nrow,
+         cols = 1:length(ft$col_keys),
+         part = "header"
+    )
   )
 }
 
 footer_rc <- function(ft) {
 
-  list(rows = 1:nrow_part(ft, "footer"),
-       cols =  1:length(ft$col_keys),
-       part = "footer"
+  list(
+    list(rows = 1:nrow_part(ft, "footer"),
+         cols =  1:length(ft$col_keys),
+         part = "footer"
+    )
   )
 }
 
 titles_rc <- function(ft) {
 
-  list(rows = titles_rows(ft),
-       cols = 1:length(ft$col_keys),
-       part = "header"
+  list(
+    list(rows = titles_rows(ft),
+         cols = 1:length(ft$col_keys),
+         part = "header"
+    )
   )
 }
 
@@ -45,9 +51,11 @@ responses_rc <- function(ft) {
 
   cols <- purrr::map2(cols$min, cols$max,\(min, max) min:max) %>% unlist()
 
-  list(rows = responses_rows(ft),
-       cols = cols,
-       part = "header")
+  list(
+    list(rows = responses_rows(ft),
+         cols = cols,
+         part = "header")
+  )
 
 }
 
@@ -61,9 +69,11 @@ years_rc <- function(ft) {
 
   cols <- purrr::map2(cols$min, cols$max,\(min, max) min:max) %>% unlist()
 
-  list(rows = years_rows(ft),
-       cols = cols,
-       part = "header")
+  list(
+    list(rows = years_rows(ft),
+         cols = cols,
+         part = "header")
+  )
 
 }
 
@@ -71,9 +81,11 @@ years_rc <- function(ft) {
 stats_rc <- function(ft) {
 
   list(
-    rows = stats_rows(ft),
-    cols = 1:length(ft$body$col_keys),
-    part = "header"
+    list(
+      rows = stats_rows(ft),
+      cols = 1:length(ft$body$col_keys),
+      part = "header"
+    )
   )
 
 }
@@ -140,9 +152,11 @@ data_rc <- function(ft) {
 footnotes_rc <- function(ft) {
 
   list(
-    rows = 1:nrow_part(ft, part = "footer"),
-    cols = 1:length(ft$body$col_keys),
-    part = "footer"
+    list(
+      rows = 1:nrow_part(ft, part = "footer"),
+      cols = 1:length(ft$body$col_keys),
+      part = "footer"
+    )
   )
 
 

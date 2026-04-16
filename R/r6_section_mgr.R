@@ -8,7 +8,6 @@ FT_SectionMgr <-
 
       ft = NULL
 
-
     ),
 
     public = list(

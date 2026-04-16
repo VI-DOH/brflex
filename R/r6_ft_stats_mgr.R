@@ -57,6 +57,10 @@ FT_StatsMgr <- R6Class(
 
       df_stats <- df_stats %>% mutate(suppress = FALSE)
 
+      flextable::set_flextable_defaults(
+        font.family = "Arial, Helvetica, 'Liberation Sans', sans-serif"
+      )
+
       ft_stats(df_stats = df_stats,
                coi = NULL,
                population = props_mgr$population,

@@ -255,32 +255,36 @@ FT_FontsMgr <-
         if(is.null(i)) i <- 1:(ft[[part]]$content$nrow)
 
         f <- paste0(area, "_rc")
-        rc <- do.call(f, args = list(ft))
+        rcs <- do.call(f, args = list(ft))
 
-        i <- rc$rows
-        j = rc$cols
-        part <- rc$part
+        purrr::walk(rcs, \(rc) {
 
-        nrow <- length(i)
+          i <- rc$rows
+          j <-  rc$cols
+          part <- rc$part
 
-        nfonts <- self$n_fonts(area)
+          nrow <- length(i)
 
-        if(nrow != nfonts) {
-          ifonts <- rep(1,nrow)
-        } else {
-          ifonts <- 1:nrow
-        }
+          nfonts <- self$n_fonts(area)
 
-        purrr::walk2(i, ifonts,\(irow, ifnt) {
-          #if(area == "responses") browser()
-          fnt  <-  private$font[[paste0(area,"_pvt")]][[ifnt]]
+          if(nrow != nfonts) {
+            ifonts <- rep(1,nrow)
+          } else {
+            ifonts <- 1:nrow
+          }
 
+          purrr::walk2(i, ifonts,\(irow, ifnt) {
+            #if(area == "responses") browser()
+            fnt  <-  private$font[[paste0(area,"_pvt")]][[ifnt]]
 
-          cat("applying ... ", area, "... ", fnt$font, "\n")
+            cat("applying font ... ", area, "... ", fnt$font, "\n")
 
-          ft <<- self$apply_font(ft, i = irow, j = j,
-                                 font = fnt, part = part)
+            ft <<- self$apply_font(ft, i = irow, j = j,
+                                   font = fnt, part = part)
+          })
+
         })
+
         ft
       },
 
@@ -402,7 +406,7 @@ FT_DefaultFontsMgr <-
 
     public = list(
 
-      initialize = function(font = "sans-serif") {
+      initialize = function(font = "Arial") {
 
         super$add_font(FT_Font$new(font = font, color = "grey22", font.size = 12), "table")
 
@@ -614,7 +618,7 @@ FT_DefaultFont <-
       initialize = function () {
 
         super$color <- "black"
-        super$font <- "sans-serif"
+        super$font <- "Arial"
         super$font.size <- 10
         super$bold <- FALSE
         super$italic <- FALSE
