@@ -277,7 +277,7 @@ FT_FontsMgr <-
             #if(area == "responses") browser()
             fnt  <-  private$font[[paste0(area,"_pvt")]][[ifnt]]
 
-            cat("applying font ... ", area, "... ", fnt$font, "\n")
+            #cat("applying font ... ", area, "... ", fnt$font, "\n")
 
             ft <<- self$apply_font(ft, i = irow, j = j,
                                    font = fnt, part = part)

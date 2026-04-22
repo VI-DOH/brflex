@@ -169,7 +169,7 @@ ft_stats <- function(df_stats, ...,
       mutate(my_sub = which_subvar(subvar = subvar, subvars = subvars) ) %>%
       arrange(my_sub, rn) %>%
       select(-my_sub, -rn) %>%
-#      mutate(across(where(is.numeric), ~if_else(is.na(.x), 0, .x))) %>%
+      #      mutate(across(where(is.numeric), ~if_else(is.na(.x), 0, .x))) %>%
       mutate(across(where(is.character), ~if_else(is.na(.x), "-", .x)))
   }
 
@@ -455,6 +455,7 @@ widen <- function(df_stats) {
   stats <- StatsMgr$stats_names()
 
   stats <- c(stats, "suppress") %>%
+    setdiff("den") %>%
     paste0(., collapse = "$|^") %>%
     paste0("^", ., "$")
 
@@ -464,9 +465,11 @@ widen <- function(df_stats) {
 
   df_wide <- df_stats %>%
     tidyr::pivot_wider(names_from = c(matches("year|response")),
-                       id_cols = c(subvar, subset),
+                       id_cols = any_of(c("subvar", "subset", "den")),
                        values_from =  c(matches(stats)), names_vary = "slowest",
-                       names_sep = "^")
+                       names_sep = "^") %>%
+    mutate(across(.cols = matches("^(den$|num)"), .fns = ~as.integer(.x))) %>%
+    replace(is.na(.), 0)
 
   df_wide
 }
