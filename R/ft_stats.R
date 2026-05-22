@@ -379,30 +379,40 @@ ft_stats <- function(df_stats, ...,
     }, names(col_padding), col_padding)
   )
 
+  # =====   set the number of digits for numerics  =====================
+
+  #  this must be done before the highlighting in case there is suppression formatting
+  #  if there is a suppression character inserted such as '*', it will be replaced with the
+  #   original value
+
+  ft <- ft %>%
+    colformat_double(digits = digits)
+
+
   #  ======  if there are highlight_rows   ====================
 
-  if(!is.null(highlights)) ft <- ft %>% ft_add_highlights(highlights)
-
+  #if(!is.null(highlights)) ft <- ft %>% ft_add_highlights(highlights)
   if(!is.null(highlights_mgr)) ft <- ft %>% highlights_mgr$apply()
 
-  df_suppress <- df_suppress %>%
-    rowwise() %>%
-    mutate(
-      suppress = any(c_across(where(is.logical)))
-    ) %>%
-    ungroup() %>%
-    filter(suppress)
+  # df_suppress <- df_suppress %>%
+  #   rowwise() %>%
+  #   mutate(
+  #     suppress = any(c_across(where(is.logical)))
+  #   ) %>%
+  #   ungroup() %>%
+  #   filter(suppress)
+  #
+  # sup_rows <- ft$body$data %>%
+  #   left_join(df_suppress, by = join_by(subvar, subset)) %>%
+  #   pull(suppress) %>%
+  #   which()
+  #
+  # if(length(sup_rows) > 0) {
+  #   ft <- ft %>%
+  #     flextable::color(i = sup_rows, j = 2:length(ft$col_keys),
+  #                      color = "#aaaaaa", part = "body")
+  # }
 
-  sup_rows <- ft$body$data %>%
-    left_join(df_suppress, by = join_by(subvar, subset)) %>%
-    pull(suppress) %>%
-    which()
-
-  if(length(sup_rows) > 0) {
-    ft <- ft %>%
-      flextable::color(i = sup_rows, j = 2:length(ft$col_keys),
-                       color = "#aaaaaa", part = "body")
-  }
 
   #  ======  do the grid around the data if required
 
@@ -415,8 +425,7 @@ ft_stats <- function(df_stats, ...,
   #  ==== there are some border issues so this their fix  ========
 
   ft <- ft %>%
-    flextable::fix_border_issues() %>%
-    colformat_double(digits = digits)
+    flextable::fix_border_issues()
 
   #  ====  caption   ===========
 

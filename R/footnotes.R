@@ -8,8 +8,10 @@ add_footnotes <- function(ft, hdr_2_stats, population) {
   ftnotes <- list(
     den = paste0("Denominator - ",population),
     num = "Numerator - number of respondents with that response",
-    percent =  "Weighted percent - value is not numerator/denominator",
-    pct =  "Weighted percent - value is not numerator/denominator",
+    percent =  "Weighted percent - note: value is not numerator/denominator",
+    pct =  "Weighted percent - note: value is not numerator/denominator",
+    cv = "Coefficient of Variance",
+    se = "Standard Error",
     ci = "95% confidence interval"
   )
 

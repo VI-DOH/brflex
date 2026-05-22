@@ -65,14 +65,6 @@ FT_HighlightsMgr <-
         ft
       }
 
-    ),
-
-    active = list(
-
-
-
-
-
     )
   )
 
@@ -308,7 +300,7 @@ FT_HighlightRow <-
         font <- self$font
         if(!is.null(font)) {
           if(!is.list(font)) {
-           font <- self$font$as.list() %>% replace(.,is.na(.),NULL)
+            font <- self$font$as.list() %>% replace(.,is.na(.),NULL)
           }
           elems <- font %>% names()
         } else {
@@ -320,10 +312,16 @@ FT_HighlightRow <-
         borders <- self$borders
 
         part <- self$part
+
+        # calculate the columns if necessary
+
         cols <- p$col_nums
 
         if(is.null(cols)) {
-          cols <- 2:ncol(df)
+          cols <- 3:ncol(df)
+        } else if(length(cols == 1) && cols < 0) {
+
+          cols <- (abs(cols) + 1):ncol(df)
         }
 
         # =============================================================
@@ -336,15 +334,16 @@ FT_HighlightRow <-
         # if(attr(ft,"sub_placement") == "top") cols <-  cols - 1
         if(ft$properties["sub_placement"] == "top") cols <-  cols - 1
 
+        # walk the cells and format them
+
         purrr::walk(row_nums, \(irow) {
           purrr::walk(cols,\(jcol) {
 
             purrr::walk(elems,\(elem) {
 
-              #cat("trying elem: ", elem, "\n")
               if(elem %in% names(ft[[part]]$styles$text)) {
                 ft[[part]]$styles$text[[elem]]$data[irow,jcol] <<- font[[elem]]
-                #cat("   OK\n")
+
               }
             })
 
@@ -391,7 +390,9 @@ FT_HighlightRow <-
               #     "[",irow,",",  jcol,"]\n", sep = "")
               # print(borders0)
 
-              ft <<- ft %>%  brflex:::make_border(borders = borders0, i = irow, j = jcol, part = part)
+              ft <<- ft %>%  brflex:::make_border(borders = borders0,
+                                                  i = irow, j = jcol,
+                                                  part = part)
 
             }
           })
@@ -422,7 +423,55 @@ FT_HighlightIf <-
 
     private = list(
 
-      quo_pvt = NULL
+      quo_pvt = NULL,
+      replace_pvt = NULL,
+
+      get_row_cols = function(ft) {
+
+        df <-  ft$body$dataset
+
+        txt <- private$quo_pvt %>% as_label()
+        var <- gsub("^(.*?)[ <>!=].*", "\\1", txt)
+        expr <- gsub("^(.*?)([ <>!=].*)", "\\2", txt)
+
+        fixcols <- df %>% colnames() %>% grep(paste0("^", var, "\\^"), ., value = TRUE)
+
+        df$ok <- FALSE
+
+
+        df_if <- purrr::map(fixcols, \(col) {
+
+          col <- paste0("`", col, "`")
+          flt <- paste0(col, expr)
+
+          ok <- df %>%
+            mutate(ok = (!!rlang::parse_expr(flt))) %>%
+            pull(ok)
+
+          data.frame(col, ok) %>%
+            mutate(rn = row_number())
+
+        }) %>%
+          bind_rows() %>% replace(is.na(.),FALSE) %>%
+          mutate(year = gsub(".*\\^([0-9]{4}).$", "\\1", col))
+
+        years <- df_if %>% pull(year) %>% unique() %>% sort()
+
+        df_yr_cols <- purrr::map(years, \(year) {
+
+          cols <- df %>% colnames() %>% grep(paste0("\\^", year), .)
+          data.frame(year, min_col = min(cols), max_col = max(cols))
+        }) %>%
+          bind_rows()
+
+        df_hilite <- df_if %>% left_join(df_yr_cols, by = join_by(year)) %>%
+          filter(ok) %>%
+          select(-col, -ok, -year) %>%
+          arrange(rn, min_col) %>%
+          distinct()
+
+        df_hilite
+      }
 
     ),
 
@@ -430,16 +479,141 @@ FT_HighlightIf <-
 
       initialize  = function(where , font = NULL,
                              bg = NULL,
-                             borders = NULL) {
+                             borders = NULL, replace = NULL) {
 
         p <- private
 
         p$type_pvt = "if"
+        p$replace_pvt = replace
 
         p$quo_pvt <- rlang::enquo(where)
         p$font_pvt = font
         p$bg_pvt = bg
         p$borders_pvt = borders
+      },
+
+      apply_highlight = function(ft) {
+
+        p <- private
+
+        replace <- p$replace_pvt
+
+        df <- ft$body$dataset
+
+        df_row_cols <- p$get_row_cols(ft)
+
+        font <- self$font
+
+        if(!is.null(font)) {
+          if(!is.list(font)) {
+            font <- self$font$as.list() %>% replace(.,is.na(.),NULL)
+          }
+          elems <- font %>% names()
+        } else {
+
+          elems <- list()
+        }
+
+        bg <- self$bg
+        borders <- self$borders
+
+        part <- "body"
+
+        # calculate the columns if necessary
+
+
+
+        # =============================================================
+        #   when you delete a column after ft is created,
+        #     like when top is selected for subset placement,
+        #     ft doesn't alter the dataset, so we track it with
+        #      this attribute
+        #
+
+        # if(attr(ft,"sub_placement") == "top") cols <-  cols - 1
+        if(ft$properties["sub_placement"] == "top") {
+
+          df_row_cols <- df_row_cols %>%
+            mutate(min_col = min_col - 1, max_col = max_col - 1)
+
+        }
+
+        # walk the cells and format them
+
+        purrr::pwalk(df_row_cols, \(rn, min_col, max_col) {
+            purrr::walk(elems,\(elem) {
+
+              if(elem %in% names(ft[[part]]$styles$text)) {
+                ft[[part]]$styles$text[[elem]]$data[rn,min_col:max_col] <<- font[[elem]]
+
+              }
+            })
+
+            if(!is.null(self$bg))
+              ft[[part]]$styles$cells$background.color$data[rn,min_col:max_col] <<- self$bg$color
+
+            if(!is.null(self$borders)){
+
+              # borders <- self$borders
+              #
+              # borders0 <- ft_borders()
+              #
+              # i0 <- rn
+              # i1 <- rn
+              #
+              # j0 <- min_col
+              # j1 <- max_col
+
+              # if(jcol > j0) {
+              #   borders0$left <- borders$midv
+              # } else {
+              #   borders0$left <- borders$left
+              # }
+              #
+              # if(jcol < j1) {
+              #   borders0$right <- borders$midv
+              # } else {
+              #   borders0$right <- borders$right
+              # }
+              #
+              # if(irow > i0) {
+              #   borders0$top <- borders$midh
+              # } else {
+              #   borders0$top <- borders$top
+              # }
+              #
+              # if(irow < i1) {
+              #   borders0$bottom <- borders$midh
+              # } else {
+              #   borders0$bottom <- borders$bottom
+              # }
+
+              # cat("========================================\n",
+              #     "[",irow,",",  jcol,"]\n", sep = "")
+              # print(borders0)
+
+              # ft <<- ft %>%  brflex:::make_border(borders = borders0,
+              #                                     i = irow, j = jcol,
+              #                                     part = part)
+
+            }
+
+            if(!is.null(replace)) {
+
+              purrr::walk(min_col:max_col, \(j0) {
+
+                ft <<- mk_par(ft, i = rn, j = j0,
+                              value = as_paragraph(replace), part = "body", use_dot = FALSE)
+              })
+
+              ft <<- ft %>% align(i = rn, j = min_col:max_col, align = "center", part = "body")
+            }
+
+
+          })
+
+        ft
+
       },
 
       print = function() {
