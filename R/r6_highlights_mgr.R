@@ -424,15 +424,18 @@ FT_HighlightIf <-
     private = list(
 
       quo_pvt = NULL,
+      where_pvt = NULL,
+      var_pvt = NULL,
+      expr_pvt = NULL,
       replace_pvt = NULL,
 
       get_row_cols = function(ft) {
 
         df <-  ft$body$dataset
 
-        txt <- private$quo_pvt %>% as_label()
-        var <- gsub("^(.*?)[ <>!=].*", "\\1", txt)
-        expr <- gsub("^(.*?)([ <>!=].*)", "\\2", txt)
+        where <- private$where_pvt
+        var <- private$var_pvt
+        expr <- private$expr_pvt
 
         fixcols <- df %>% colnames() %>% grep(paste0("^", var, "\\^"), ., value = TRUE)
 
@@ -493,7 +496,13 @@ FT_HighlightIf <-
         p$type_pvt = "if"
         p$replace_pvt = replace
 
+
         p$quo_pvt <- rlang::enquo(where)
+        where <- p$quo_pvt %>% as_label()
+        p$where_pvt <- where
+        p$var_pvt <- gsub("^(.*?)[ <>!=].*", "\\1", where)
+        p$expr_pvt <- gsub("^(.*?)([ <>!=].*)", "\\2", where)
+
         p$font_pvt = font
         p$bg_pvt = bg
         p$borders_pvt = borders
@@ -507,6 +516,7 @@ FT_HighlightIf <-
 
         df <- ft$body$dataset
 
+        browser()
         df_row_cols <- p$get_row_cols(ft)
 
         font <- self$font
@@ -625,7 +635,7 @@ FT_HighlightIf <-
 
       print = function() {
 
-        cat("condition: ",  private$quo_pvt %>% as_label())
+        cat("where: ",  private$quo_pvt %>% as_label())
         super$print()
       }
     ),

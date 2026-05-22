@@ -96,8 +96,7 @@ ft_stats <- function(df_stats, ...,
 
   # =======  apply default fonts if necessary  ==============
 
-  flextable::set_flextable_defaults()
-
+  flextable::set_flextable_defaults(na_str = "*")
 
   # ==========================================================================
   #
@@ -477,8 +476,10 @@ widen <- function(df_stats) {
                        id_cols = any_of(c("subvar", "subset", "den")),
                        values_from =  c(matches(stats)), names_vary = "slowest",
                        names_sep = "^") %>%
-    mutate(across(.cols = matches("^(den$|num)"), .fns = ~as.integer(.x))) %>%
-    replace(is.na(.), 0)
+    mutate(across(.cols = matches("^(den$|num)"), .fns = ~as.integer(.x)))
+
+  # %>%
+  #   replace(is.na(.), 0)
 
   df_wide
 }
