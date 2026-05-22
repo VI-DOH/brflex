@@ -438,7 +438,6 @@ FT_HighlightIf <-
 
         df$ok <- FALSE
 
-
         df_if <- purrr::map(fixcols, \(col) {
 
           col <- paste0("`", col, "`")
@@ -452,7 +451,15 @@ FT_HighlightIf <-
             mutate(rn = row_number())
 
         }) %>%
-          bind_rows() %>% replace(is.na(.),FALSE) %>%
+          bind_rows()
+
+        # get out if there's nothing here to highlight
+
+        if(nrow(df_if) == 0) return(ft)
+
+        # continue with the highlighting
+
+        df_if <- df_if %>% replace(is.na(.),FALSE) %>%
           mutate(year = gsub(".*\\^([0-9]{4}).$", "\\1", col))
 
         years <- df_if %>% pull(year) %>% unique() %>% sort()
