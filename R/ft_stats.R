@@ -312,6 +312,16 @@ ft_stats <- function(df_stats, ...,
 
   if(footnotes) ft <- ft %>% add_footnotes(ftnote_stats, population)
 
+  df_supp <- ft$body$dataset
+  test_na <- df_supp %>% count(is.na(.)) %>% select(1) %>% any()
+
+  if(test_na) {
+
+    ft <- ft %>% add_footer_lines(
+      values = "* - data suppressed due to high variability (CV > 30%) ", top = TRUE)
+  }
+
+
   ft$header$sections <- sections
 
   # =========  do the fonts  ================
