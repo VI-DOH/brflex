@@ -124,6 +124,7 @@ FT_StatPropsMgr <- R6Class(
         private$widths_pvt[[nm]] <<- val
       })
 
+      browser()
       return()
     },
 

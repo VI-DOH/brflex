@@ -516,7 +516,6 @@ FT_HighlightIf <-
 
         df <- ft$body$dataset
 
-        browser()
         df_row_cols <- p$get_row_cols(ft)
 
         font <- self$font
