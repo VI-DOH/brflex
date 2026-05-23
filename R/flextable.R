@@ -433,7 +433,6 @@ handle_widths <- function(ft, widths) {
 
       cols <- which(key_names == col)
 
-      browser()
       if(length(cols) == 0) {
         key_names <- ft$header$content$data %>% tail(1) %>%
           purrr::map(~.x["txt"][[1]]) %>%
