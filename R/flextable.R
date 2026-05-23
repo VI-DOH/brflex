@@ -429,7 +429,7 @@ handle_widths <- function(ft, widths) {
   invisible(
     mapply(function(col, width) {
 
-      key_names <-  gsub("^.*", "",ft$col_keys)
+      key_names <-  gsub("\\^.*", "",ft$col_keys)
 
       cols <- which(key_names == col)
 
