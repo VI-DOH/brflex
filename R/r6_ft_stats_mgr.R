@@ -61,9 +61,6 @@ FT_StatsMgr <- R6Class(
         font.family = "Arial"
       )
 
-      cat("calling ft_stats with ... widths = \n")
-      print(props_mgr$widths)
-
       ft_stats(df_stats = df_stats,
                coi = NULL,
                population = props_mgr$population,
