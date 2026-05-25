@@ -43,7 +43,6 @@ FT_StatsMgr <- R6Class(
       props_mgr <- private$props_mgr_pvt
       stats_mgr <- private$stats_mgr_pvt
 
-      browser()
       if(is.null(df_stats)) {
         df_stats <- stats_mgr$survey_stats(coi = coi, reduce = FALSE)
       }
