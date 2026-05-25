@@ -47,6 +47,7 @@ FT_StatsMgr <- R6Class(
 
       if(is.null(df_stats)) return(ft_no_data())
 
+      browser()
       if(private$use_first_factor) {
 
         resp <- stats_mgr$survey_stats() %>% pull(response) %>% {.[1]}
