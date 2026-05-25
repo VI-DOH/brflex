@@ -43,11 +43,14 @@ FT_StatsMgr <- R6Class(
       props_mgr <- private$props_mgr_pvt
       stats_mgr <- private$stats_mgr_pvt
 
-      if(is.null(df_stats)) df_stats <- stats_mgr$survey_stats(coi = coi, reduce = FALSE)
+      browser()
+      if(is.null(df_stats)) {
+        df_stats <- stats_mgr$survey_stats(coi = coi, reduce = FALSE)
+      }
 
       if(is.null(df_stats)) return(ft_no_data())
 
-      browser()
+
       if(private$use_first_factor) {
 
         resp <- stats_mgr$survey_stats() %>% pull(response) %>% {.[1]}
