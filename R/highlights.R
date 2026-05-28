@@ -8,7 +8,8 @@ ft_add_highlights <- function(ft, highlights) {
   lapply(highlights, function(highlight){
 
     if(class(highlight) == "ft_highlight") ft <<- ft %>% ft_add_highlight(highlight)
-    if(class(highlight) == "ft_highlight_if") ft <<- ft %>% ft_add_highlight_if(highlight)
+    if(class(highlight) == "ft_highlight_if") ft <<- ft %>%
+        ft_add_highlight_if(highlight)
 
   })
 

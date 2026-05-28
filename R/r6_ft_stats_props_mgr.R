@@ -294,7 +294,7 @@ FT_StatPropsMgr <- R6Class(
 
       if(class(value) != "character") return(NULL)
 
-      value <- value[value %in% c("num", "den", "percent", "se", "ci", "cv")]
+      value <- value[value %in% c("num", "den", "percent", "se", "ci", "rse")]
 
       private$stats_pvt <- value
     },

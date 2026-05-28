@@ -10,7 +10,7 @@ add_footnotes <- function(ft, hdr_2_stats, population) {
     num = "Numerator - number of respondents with that response",
     percent =  "Weighted percent - note: value is not numerator/denominator",
     pct =  "Weighted percent - note: value is not numerator/denominator",
-    cv = "Coefficient of Variance",
+    rse = "Relative Standard Error",
     se = "Standard Error",
     ci = "95% confidence interval"
   )

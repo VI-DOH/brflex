@@ -318,7 +318,7 @@ ft_stats <- function(df_stats, ...,
   if(test_na) {
 
     ft <- ft %>% add_footer_lines(
-      values = "* - data suppressed due to high variability (CV > 30%) ", top = TRUE)
+      values = "* -  Data suppressed because the Relative Standard Error (RSE) exceeds 30%, failing to meet CDC standards for statistical reliability", top = TRUE)
   }
 
 
