@@ -33,7 +33,7 @@
 ft_stats <- function(df_stats, ...,
                      coi = NULL,
                      population = NULL,
-                     stats = c("den", "num", "percent", "ci"),
+                     stats = c("den", "num", "percent", "ci", "rse"),
                      exclude = "^$",
                      responses = ".*",
                      rename = c(percent = "pct"),
@@ -55,7 +55,8 @@ ft_stats <- function(df_stats, ...,
                      fonts_mgr = NULL,
                      paddings = list(),
                      box = NULL,
-                     grid = NULL) {
+                     grid = NULL,
+                     suppression_msg = NULL) {
 
 
 
@@ -77,9 +78,12 @@ ft_stats <- function(df_stats, ...,
     return(ft_no_data())
   }
 
-  df_stats <- df_stats %>%
-    filter(!grepl(exclude, subset)) %>%
-    filter(grepl(responses, response))
+
+  if(is.character(exclude)) df_stats <- df_stats %>%
+    filter(!grepl(exclude, subset))
+
+    if(is.character(responses)) df_stats <- df_stats %>%
+       filter(grepl(responses, response))
 
   if(nrow(df_stats) == 0) {
 
@@ -151,6 +155,9 @@ ft_stats <- function(df_stats, ...,
   else subvars  <-  character(0)
 
   df_tbl <- widen(df_stats_rpt)
+
+  df_tbl <- df_tbl %>% as.data.frame()
+
 
   df_suppress <- df_tbl %>%
     select(subvar, subset, starts_with("suppress"))
@@ -247,7 +254,12 @@ ft_stats <- function(df_stats, ...,
   stats_line <- hdr_lines %>% tail(1)
 
   nresponses <- df_stats %>% pull(response) %>% unique() %>% length()
-  nyears <- df_stats %>% pull(year) %>% unique() %>% length()
+
+  if("year" %in% colnames(df_stats)) {
+    nyears <- df_stats %>% pull(year) %>% unique() %>% length()
+  } else {
+    nyears <-  1
+  }
 
   if(nyears == 1) {
     hdr_lines <- tail(hdr_lines,-1)
@@ -318,7 +330,7 @@ ft_stats <- function(df_stats, ...,
   if(test_na) {
 
     ft <- ft %>% add_footer_lines(
-      values = "* -  Data suppressed because the Relative Standard Error (RSE) exceeds 30%, failing to meet CDC standards for statistical reliability", top = TRUE)
+      values = suppression_msg, top = TRUE)
   }
 
 

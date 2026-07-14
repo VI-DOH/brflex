@@ -22,7 +22,6 @@ add_footnotes <- function(ft, hdr_2_stats, population) {
     cols <- which(hdr_2_stats == nm)
     part  <-  "header"
 
-
     if(length(cols)>0) {
 
       stats_row <-  nrow_part(ft, part = part)
@@ -34,6 +33,7 @@ add_footnotes <- function(ft, hdr_2_stats, population) {
         flextable::padding(i = next_ftnt,padding.top = 2, padding.bottom = 2,
                            part = "footer")%>%
         merge_at(i = next_ftnt, part = "footer" )
+
       next_ftnt <<- next_ftnt + 1
     }
   }, ftnotes, names(ftnotes))

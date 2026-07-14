@@ -32,7 +32,12 @@ FT_StatPropsMgr <- R6Class(
     paddings_pvt = list(),
 
     box_pvt = NULL,
-    grid_pvt = NULL
+    grid_pvt = NULL,
+
+    suppression_msg_pvt =
+      paste0("* Data suppressed because the Relative Standard Error ",
+             "(RSE) exceeds 30%, failing to meet CDC standards ",
+             "for statistical reliability")
   ),
 
   public = list(
@@ -163,6 +168,16 @@ FT_StatPropsMgr <- R6Class(
   ),
 
   active = list(
+
+    suppression_msg = function(value) {
+
+      if(missing(value)) return(private$suppression_msg_pvt)
+
+      if(is.character(value)) {
+        private$suppression_msg_pvt <- value
+      }
+
+    },
 
     fonts_mgr = function(value) {
 

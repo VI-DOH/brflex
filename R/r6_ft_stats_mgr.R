@@ -49,7 +49,6 @@ FT_StatsMgr <- R6Class(
 
       if(is.null(df_stats)) return(ft_no_data())
 
-
       if(private$use_first_factor) {
 
         resp <- stats_mgr$survey_stats() %>% pull(response) %>% {.[1]}
@@ -92,7 +91,8 @@ FT_StatsMgr <- R6Class(
                paddings = props_mgr$paddings,
 
                box = props_mgr$box,
-               grid = props_mgr$grid
+               grid = props_mgr$grid,
+               suppression_msg = props_mgr$suppression_msg
       )
     }
 
@@ -160,11 +160,9 @@ FT_DefaultStatsMgr <- R6Class(
 
   public = list(
 
-    initialize = function() {
+    initialize = function(...) {
 
-      stats_mgr <- brfss::StatsMgr$new()
-      super$initialize(props_mgr = FT_DefaultStatPropsMgr$new(),
-                       stats_mgr = stats_mgr)
+      super$initialize(props_mgr = FT_DefaultStatPropsMgr$new(), ...)
 
       stats_mgr$subvars <- c("Sex", "Race")
 

@@ -12,6 +12,7 @@ table_rc <- function(ft) {
   })
 }
 
+
 header_rc <- function(ft) {
 
   list(
