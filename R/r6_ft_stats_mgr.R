@@ -164,7 +164,7 @@ FT_DefaultStatsMgr <- R6Class(
 
       super$initialize(props_mgr = FT_DefaultStatPropsMgr$new(), ...)
 
-      stats_mgr$subvars <- c("Sex", "Race")
+      private$stats_mgr_pvt$subvars <- c("Sex", "Race")
 
     }
   )
