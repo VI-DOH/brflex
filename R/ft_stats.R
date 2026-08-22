@@ -456,9 +456,8 @@ ft_stats <- function(df_stats, ...,
   if(length(dencols) > 0) {
     dencol1  <- dencols[1]
     i <- responses_rows(ft)
-    ft <- ft |> unmerge_at(i = i, j = dencol1, part = "header")
+    ft <- ft |> ft_unmerge_at(i = i, j = dencol1, part = "header")
     ft <- ft |> bg(i = i, j = dencols, bg = "#dddddd", part = "header")
-
 
   }
 
