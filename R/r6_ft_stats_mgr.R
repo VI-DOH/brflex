@@ -63,6 +63,7 @@ FT_StatsMgr <- R6Class(
         font.family = "Arial"
       )
 
+
       ft_stats(df_stats = df_stats,
                coi = NULL,
                population = props_mgr$population,
@@ -164,7 +165,7 @@ FT_DefaultStatsMgr <- R6Class(
 
       super$initialize(props_mgr = FT_DefaultStatPropsMgr$new(), ...)
 
-      private$stats_mgr_pvt$subvars <- c("Sex", "Race")
+      super$stats_mgr$subvars <- c("Sex", "Race")
 
     }
   )

@@ -238,7 +238,8 @@ ft_stats <- function(df_stats, ...,
 
     if(ntitles > 0) {
 
-      titles <- gsub_attr(titles, stats_attrs)%>%
+
+            titles <- gsub_attr(titles, stats_attrs)%>%
         split_before(title_max_char,collapse = "\n")
 
       ft <- ft %>%
@@ -448,6 +449,19 @@ ft_stats <- function(df_stats, ...,
   ft <- ft %>%
     flextable::fix_border_issues()
 
+  # ===== kludge to unmerge first den line, if it exists
+
+  dencols  <- which(stats_line[[1]] == "den")
+
+  if(length(dencols) > 0) {
+    dencol1  <- dencols[1]
+    i <- responses_rows(ft)
+    ft <- ft |> unmerge_at(i = i, j = dencol1, part = "header")
+    ft <- ft |> bg(i = i, j = dencols, bg = "#dddddd", part = "header")
+
+
+  }
+
   #  ====  caption   ===========
 
   # ft <- ft %>%  set_caption(
@@ -485,7 +499,6 @@ widen <- function(df_stats) {
   stats <- StatsMgr$stats_names()
 
   stats <- c(stats, "suppress") %>%
-    setdiff("den") %>%
     paste0(., collapse = "$|^") %>%
     paste0("^", ., "$")
 
@@ -495,13 +508,49 @@ widen <- function(df_stats) {
 
   df_wide <- df_stats %>%
     tidyr::pivot_wider(names_from = c(matches("year|response")),
-                       id_cols = any_of(c("subvar", "subset", "den")),
+                       id_cols = any_of(c("subvar", "subset")),
                        values_from =  c(matches(stats)), names_vary = "slowest",
                        names_sep = "^") %>%
     mutate(across(.cols = matches("^(den$|num)"), .fns = ~as.integer(.x)))
 
   # %>%
   #   replace(is.na(.), 0)
+
+
+
+
+  cnames <- df_wide |> colnames()
+
+  fix_cols <- data.frame(cname = cnames) |>
+    mutate(year = gsub(".*\\^([0-9]{4})", "\\1", cname)) |>
+    mutate(step1 = gsub("\\^([0-9]{4})", "", cname)) |>
+    mutate(resp = gsub("(.*)\\^", "", step1))  |>
+    mutate(stat = gsub("\\^(.*)", "", step1)) |>
+    select(cname, year, stat, resp) |>
+    tibble::rownames_to_column("rn") |>
+    # filter(stat == "den") |>
+    group_by(year, stat) |>
+    mutate(rn2 = row_number())
+
+  fix_cols
+
+
+  rem_cols <- fix_cols |>
+    filter(rn2 > 1 & stat == "den") |>
+    pull(cname)
+
+
+  new_names <- fix_cols |>
+    select(-rn2, -resp) |>
+    mutate(cname = if_else(stat == "den", paste0("den^^", year), cname)) |>
+    pull(cname)
+
+  new_names <- setdiff(new_names, rem_cols)
+
+
+  df_wide <- df_wide |> select(-all_of(rem_cols))
+
+  colnames(df_wide) <- new_names
 
   df_wide
 }

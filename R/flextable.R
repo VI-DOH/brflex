@@ -119,8 +119,9 @@ gsub_attr <- function(x, attr, delim = "{}") {
       attrib <- gsub(pttrn,"\\1",x0)
       attrib_val <- attr[attrib]
 
-      x0 <- gsub(paste0("{", attrib, "}"), attrib_val, x0, fixed = TRUE)
-
+      if(!is.null(attrib_val)) {
+        x0 <- gsub(paste0("{", attrib, "}"), attrib_val, x0, fixed = TRUE)
+      }
       #%>% split_before(title_max_char,collapse = "\n")
 
     }
@@ -233,7 +234,7 @@ ft_add_titles <- function(ft, titles, title_spacing = 1.0) {
 
   if(ntitles > 0) {
 
- df <- ft$body$dataset
+    df <- ft$body$dataset
 
     titles <-   sapply(titles, function(title){
       if(grepl("\\{(.*)\\}", title)) {
@@ -269,6 +270,37 @@ ft_add_titles <- function(ft, titles, title_spacing = 1.0) {
 
 }
 
+ft_unmerge_at <- function(ft, i, j, part) {
+
+  span <- ft[[part]]$spans$rows[i,j]
+
+  if(span == 1) {
+
+    message("this cell is not merged")
+
+  } else if(span == 0)  {
+
+    insp <- ft[[part]]$spans$rows[i,1:(j - 1)]
+    st <- max(which(insp > 0))
+
+    ft[[part]]$spans$rows[i,j] <- 1
+    ft[[part]]$spans$rows[i,st] <- ft[[part]]$spans$rows[i,j - 1] - 1
+
+  } else {
+
+    ft[[part]]$spans$rows[i,j] <- 1
+
+    insp <- ft[[part]]$spans$rows[i, (j + 1):length(ft$col_keys)]
+    zeroes <- min(which(insp > 0)) - 1
+
+    if(end > 0) ft[[part]]$spans$rows[i,j + 1] <- zeroes
+
+  }
+
+  ft
+}
+
+
 ft_add_resp_hdr <- function(ft, values) {
 
   resp_row <-  nrow_part(ft, part = "header") + 1
@@ -277,9 +309,7 @@ ft_add_resp_hdr <- function(ft, values) {
   ft <- ft %>%
     flextable::add_header_row (top = FALSE, values = values) %>%
     flextable::merge_h(i = resp_row, part = "header")  %>%
-    flextable::align(i = resp_row, align = "center", part = "header") #%>%
-  # flextable::vline(i = resp_row, j = vline_cols, border = fp_border(),
-  #                  part = "header")
+    flextable::align(i = resp_row, align = "center", part = "header")
 
   ft
 
