@@ -153,7 +153,9 @@ ft_add_data <- function(ft, df) {
 
   last_sub <- ""
 
-  df <- df %>% mutate(across(starts_with("num"), as.integer))
+  df <- df %>%
+    mutate(across(starts_with("num"), as.integer))%>%
+    mutate(across(starts_with("den"), as.integer))
 
   ft$body$dataset <-ft$body$dataset %>% mutate(across(starts_with("num"), as.integer))
   new_row <- df[0, ] %>% add_row(subvar = "", subset = "")
